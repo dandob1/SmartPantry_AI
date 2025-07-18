@@ -11,6 +11,8 @@ import json
 import time
 from openai import AzureOpenAI
 from dotenv import load_dotenv
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import base64
@@ -140,13 +142,19 @@ def analyze_receipt(input_file_name):
                 "role": "system",
                 "content": """You're a helpful assistant that categorizes spending from receipts into budget categories and generates graphs.
                     When given receipt items, you must:
-                    1. Categorize each item into a category like Food, Health, Leisure, Household, or Other
+                    1. Categorize each item into a category like Food, Health, Leisure, Household, or Other. ITS CRITICAL you adhere to choose only from the categories provided:
+                        - Groceries... subcategories: Produce, Meat & Poultry, Dairy, Bakery, Pantry & Dry Goods, Frozen Foods, Snacks & Candy, Beverages (non-alcoholic), Alcoholic Beverages, Household Supplies, Pharmacy / Health Goods, Extras
+                        - Dining Out... subcategories: Fast Food, Casual Dining, Fine Dining, Coffee Shops, Takeout & Delivery, Bars & Pubs
+                        - Transportation... Subcategories: Gasoline, Parking, Public Transit, Car Maintenance, Tolls & Fees, Rideshare (Uber/Lyft), Travel
+                        - Clothing & Accessories... subcategories: Mens Clothing, Womens Clothing, Childrens Clothing, Footwear, Accessories
+                        - Leisure & Entertainment... subcategories: Movies & Events, Streaming Services, Games & Toys, Hobbies & Crafts, Sports & Fitness, Extras
+                        - If an item does not fit into any of these categories, classify it as Other.
                     2. Provide further separation into each category by dividing items into subcategories like Groceries-produce, groceries-meat, restaurant-fast food, restaurant-dine in, etc.
                     3. Group totals by category and find the total spending in each category by manually adding each item in that category
                     4. Acquire the total spending across all categories by adding up the totals of each category
                     5. Return the data by calling the plot_pie_chart function with a data dictionary
 
-                    IMPORTANT: Always call the plot_pie_chart function with the spending data. If you only have one category of items, provide the pie chart with the subcategories. If you have multiple categories, provide the pie chart with the main categories that dont have subcategories and the subcategories that compromise a main category.
+                    IMPORTANT: Always call the plot_pie_chart function with the spending data. If you only have one category of items, provide the pie chart with the subcategories. If you have multiple categories, provide the pie chart with just the main categories.
 
                     Example format for function call:
                     - If multiple categories: {"Food": 22.35, "Health": 15.50, "Household": 8.75}

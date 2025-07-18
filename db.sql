@@ -1,7 +1,7 @@
 --Users
 DROP TABLE IF EXISTS User;
 CREATE TABLE User (
-    uid CHAR(6) PRIMARY KEY AUTOINCREMENT,
+    uid INTEGER PRIMARY KEY AUTOINCREMENT,
     fname VARCHAR(50) NOT NULL,
     lname VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE User (
 DROP TABLE IF EXISTS receipt;
 CREATE TABLE receipt (
     rid INTEGER PRIMARY KEY AUTOINCREMENT,
-    uid CHAR(6) PRIMARY KEY,
+    uid INTEGER NOT NULL,
     total_spend DECIMAL(10, 2),
     date_uploaded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     image_path TEXT,
@@ -26,7 +26,7 @@ CREATE TABLE receiptData (
     rid INTEGER NOT NULL,
     itemName VARCHAR(100) NOT NULL,
     itemPrice DECIMAL(10, 2) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    subcategory VARCHAR(100) NOT NULL,
+    category VARCHAR(100),
+    subcategory VARCHAR(100),
     FOREIGN KEY (rid) REFERENCES receipt(rid)
 ); 
