@@ -1,0 +1,32 @@
+--Users
+DROP TABLE IF EXISTS User;
+CREATE TABLE User (
+    uid CHAR(6) PRIMARY KEY AUTOINCREMENT,
+    fname VARCHAR(50) NOT NULL,
+    lname VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+);
+
+--Entire Reciept
+DROP TABLE IF EXISTS receipt;
+CREATE TABLE receipt (
+    rid INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid CHAR(6) PRIMARY KEY,
+    total_spend DECIMAL(10, 2),
+    date_uploaded TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    image_path TEXT,
+    FOREIGN KEY (uid) REFERENCES User(uid)
+); 
+
+--Each Individual Reciept List
+DROP TABLE IF EXISTS receiptData;
+CREATE TABLE receiptData (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    rid INTEGER NOT NULL,
+    itemName VARCHAR(100) NOT NULL,
+    itemPrice DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    subcategory VARCHAR(100) NOT NULL,
+    FOREIGN KEY (rid) REFERENCES receipt(rid)
+); 

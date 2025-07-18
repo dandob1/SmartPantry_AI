@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt Analyzer</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <h1>Receipt Analyzer</h1>
+    
+    <div class="supported-formats">
+        <h3>Supported File Formats:</h3>
+        <p>PDF, JPEG, JPG, PNG</p>
+        <p><strong>Note:</strong> File size should be less than 50MB</p>
+    </div>
+    
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="receipt">Select Receipt Image:</label>
+            <input type="file" id="receipt" name="receipt" accept="image/*,.pdf" required>
+        </div>
+        <button type="submit">Analyze Receipt</button>
+    </form>
+
+    {% if error %}
+    <div class="error">
+        <h3>Error:</h3>
+        <p>{{ error }}</p>
+    </div>
+    {% endif %}
+
+    {% if result %}
+    <h2>Results:</h2>
+    <pre>{{ result }}</pre>
+    {% endif %}
+
+    {% if image_path %}
+    <h2>Spending Breakdown:</h2>
+    <img src="{{ image_path }}" alt="Pie Chart">
+    {% endif %}
+</body>
+</html>
