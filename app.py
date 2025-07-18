@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import os
 from receipt_analysis import analyze_receipt
-import magic
+import magic # type: ignore
 import sqlite3
 from flask import Flask, session, render_template, redirect, url_for, request
 
