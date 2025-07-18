@@ -73,7 +73,7 @@ def signup():
 
 
 @app.route("/home", methods=["GET", "POST"])
-def index():
+def home():
     result = None
     image_path = None
     error = None
