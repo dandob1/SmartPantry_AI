@@ -20,6 +20,7 @@ from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.core.credentials import AzureKeyCredential
 import os
 import re
+import sqlite3
 
 def plot_pie_chart(data):
     if not data:
@@ -45,7 +46,7 @@ def plot_pie_chart(data):
 
     return "/" + output_path
 
-def analyze_receipt(input_file_name):
+def analyze_receipt(input_file_name, uid):
     #print("Starting receipt analysis")
     # Loading the environment variables
     #load_dotenv()
@@ -70,9 +71,13 @@ def analyze_receipt(input_file_name):
             content_type="application/octet-stream"
         )
 
+    conn = sqlite3.connect("db.db")
+    cur = conn.cursor()
+
     extracted_items = ""
     result = poller.result()
     outputs = []
+    items_for_db = []
 
     #display results
     #print("Receipt Analysis Results:")
@@ -81,25 +86,24 @@ def analyze_receipt(input_file_name):
         for document in result.documents:       
             items = document.fields["Items"].value_array
 
-            for i, item in enumerate(items):
+            for item in items:
                 #get price
                 item_value = item.value_object
                 if item_value.get("TotalPrice"):
                     item_total = item_value.get("TotalPrice").content
                 else:
-                    item_total = "N/A"
+                    item_total = "0.00"
 
                 item_total = re.sub(r'[^\d.\-]', '', item_total).strip()
                 if item_total.endswith('-'):
                     item_total = item_total[:-1].strip()
                 
                 try:
-                    if item_total != "N/A":
-                        finalCost += float(item_total)
-                except (ValueError, AttributeError):
-                    print("Error parsing receipt item total:", item_total)
+                    price = round(float(item_total), 2)
+                except (ValueError, TypeError):
+                    price = 0.00
 
-
+                finalCost += price
 
                 #get item name
                 possible_name_keys = ["Name", "Description", "Item", "Product", "Title"]
@@ -112,7 +116,13 @@ def analyze_receipt(input_file_name):
                 if not item_name:
                     item_name = "Unnamed Item"
 
-                outputs.append(item_name + " || total: $" + item_total)
+                category    = item_value.get("Category",    {}).get("content", "Other")
+                subcategory = item_value.get("Subcategory", {}).get("content", "")
+
+                outputs.append(item_name + " || Price: $" + f"{price:.2f}")
+
+                items_for_db.append((item_name, price, category, subcategory))
+
             
             extracted_items = "\n".join(outputs)
 
@@ -175,9 +185,21 @@ def analyze_receipt(input_file_name):
     if message.function_call:
         arguments = json.loads(message.function_call.arguments)
         image_path = plot_pie_chart(arguments)
-    else:
-        # In case GPT didn't use the function call
-        print(message.content)
+
+    cur.execute(
+        "INSERT INTO receipt (uid, total_spend, image_path) VALUES (?, ?, ?)",
+        (uid, finalCost, image_path)
+    )
+    rid = cur.lastrowid
+
+    for name, price, category, subcategory in items_for_db:
+        cur.execute(
+            "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?, ?, ?, ?, ?)",
+            (rid, name, price, category, subcategory)
+        )
+
+    conn.commit()
+    conn.close()
             
     outputs.append(f"Subtotal: ${finalCost}")
     return "\n".join(outputs), image_path
