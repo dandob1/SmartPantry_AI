@@ -22,6 +22,7 @@ import os
 import re
 import sqlite3
 
+#pie chart plotting function
 def plot_pie_chart(data):
     if not data:
         print("No data to plot.")
@@ -46,6 +47,7 @@ def plot_pie_chart(data):
 
     return "/" + output_path
 
+#the receipt analysis function
 def analyze_receipt(input_file_name, uid):
     #print("Starting receipt analysis")
     # Loading the environment variables
@@ -57,12 +59,12 @@ def analyze_receipt(input_file_name, uid):
             api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
             api_version="2024-12-01-preview",
         )
-    
+    #receipt reader client
     document_intelligence_client = DocumentIntelligenceClient(
         endpoint="https://testreadreciept.cognitiveservices.azure.com/",
         credential=AzureKeyCredential("39iwdH3cbVrTiGFLksknxzvPZDP2qBD6E5QQ97HgsyKg19ou4odPJQQJ99BFACYeBjFXJ3w3AAALACOGgR2Z")
     )
-    
+    #open image
     with open(input_file_name, 'rb') as image_file:
         #use the reciept model
         poller = document_intelligence_client.begin_analyze_document(
@@ -70,10 +72,10 @@ def analyze_receipt(input_file_name, uid):
             image_file,
             content_type="application/octet-stream"
         )
-
+    #connect to the database
     conn = sqlite3.connect("db.db")
     cur = conn.cursor()
-
+#variables used
     extracted_items = ""
     result = poller.result()
     outputs = []
@@ -93,11 +95,11 @@ def analyze_receipt(input_file_name, uid):
                     item_total = item_value.get("TotalPrice").content
                 else:
                     item_total = "0.00"
-
+                #clean up the price
                 item_total = re.sub(r'[^\d.\-]', '', item_total).strip()
                 if item_total.endswith('-'):
                     item_total = item_total[:-1].strip()
-                
+                #convert to float and round
                 try:
                     price = round(float(item_total), 2)
                 except (ValueError, TypeError):
@@ -108,6 +110,7 @@ def analyze_receipt(input_file_name, uid):
                 #get item name
                 possible_name_keys = ["Name", "Description", "Item", "Product", "Title"]
                 item_name = None
+                #try to find the item name in the possible keys
                 for key in possible_name_keys:
                     field = item_value.get(key)
                     if field and getattr(field, "content", "").strip():
@@ -125,7 +128,7 @@ def analyze_receipt(input_file_name, uid):
 
             
             extracted_items = "\n".join(outputs)
-
+    #define functions
     functions = [
         {
             "name": "plot_pie_chart",
@@ -139,12 +142,27 @@ def analyze_receipt(input_file_name, uid):
                         "additionalProperties": {
                             "type": "number"
                         }
+                    },
+                    "items": {
+                    "type": "array",
+                    "description": "Each item with its name, price, category & subcategory",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name":        { "type": "string" },
+                            "price":       { "type": "number" },
+                            "category":    { "type": "string" },
+                            "subcategory": { "type": "string" }
+                        },
+                        "required": ["name","price","category","subcategory"]
                     }
+                }
                 },
-                "required": ["data"]
+                "required": ["data", "items"]
             }
         }
     ]
+    #get response from OpenAI
     response = openai_client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
@@ -162,7 +180,10 @@ def analyze_receipt(input_file_name, uid):
                     2. Provide further separation into each category by dividing items into subcategories like Groceries-produce, groceries-meat, restaurant-fast food, restaurant-dine in, etc.
                     3. Group totals by category and find the total spending in each category by manually adding each item in that category
                     4. Acquire the total spending across all categories by adding up the totals of each category
-                    5. Return the data by calling the plot_pie_chart function with a data dictionary
+                    5. Return both:
+                       • a top-level “data” object mapping each category→total
+                       • an “items” array of {name,price,category,subcategory}
+                    by calling the plot_pie_chart function with both keys.
 
                     IMPORTANT: Always call the plot_pie_chart function with the spending data. If you only have one category of items, provide the pie chart with the subcategories. If you have multiple categories, provide the pie chart with just the main categories.
 
@@ -179,19 +200,39 @@ def analyze_receipt(input_file_name, uid):
         functions=functions,
         function_call="auto"
     )
-
     message = response.choices[0].message
     image_path = None
+    #get information from the response
     if message.function_call:
         arguments = json.loads(message.function_call.arguments)
-        image_path = plot_pie_chart(arguments)
+        classified = arguments.get("items", [])
+        if "data" in arguments:
+            totals = arguments["data"]
+        else:
+            totals = {}
+            for it in classified:
+                cat = it["category"]
+                totals[cat] = totals.get(cat, 0.0) + it["price"]
 
+        items_for_db.clear()
+        #prepare them for database insertion
+        for item in classified:
+            name = item["name"]
+            price = item["price"]
+            category = item["category"]
+            subcategory = item["subcategory"]
+
+            row = (name, price, category, subcategory)
+            items_for_db.append(row)
+
+        image_path = plot_pie_chart(totals)
+    #put into first table
     cur.execute(
         "INSERT INTO receipt (uid, total_spend, image_path) VALUES (?, ?, ?)",
         (uid, finalCost, image_path)
     )
     rid = cur.lastrowid
-
+    #second table
     for name, price, category, subcategory in items_for_db:
         cur.execute(
             "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?, ?, ?, ?, ?)",
@@ -201,5 +242,4 @@ def analyze_receipt(input_file_name, uid):
     conn.commit()
     conn.close()
             
-    outputs.append(f"Subtotal: ${finalCost}")
-    return "\n".join(outputs), image_path
+    return items_for_db, image_path

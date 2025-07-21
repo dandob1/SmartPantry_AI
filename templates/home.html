@@ -5,7 +5,10 @@
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    <h1>Receipt Analyzer</h1>
+    <div class="header">
+        <h1>Receipt Analyzer</h1>
+        <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
+    </div>
     
     <div class="supported-formats">
         <h3>Supported File Formats:</h3>
@@ -28,10 +31,30 @@
     </div>
     {% endif %}
 
-    {% if result %}
+    {% if table_data %}
     <h2>Results:</h2>
-    <pre>{{ result }}</pre>
+    <table>
+        <thead>
+        <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Subcategory</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for name, price, category, subcategory in table_data %}
+            <tr>
+            <td>{{ name }}</td>
+            <td>${{ "%.2f"|format(price) }}</td>
+            <td>{{ category }}</td>
+            <td>{{ subcategory }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
     {% endif %}
+
 
     {% if image_path %}
     <h2>Spending Breakdown:</h2>

@@ -22,6 +22,7 @@ ALLOWED_TYPES = {
 def get_db_connection():
     return sqlite3.connect("db.db")
 
+#login route
 @app.route("/", methods=["GET", "POST"])
 def login():
     check = None
@@ -44,6 +45,7 @@ def login():
             check = "Invalid email or password."
     return render_template("login.html", check=check)
 
+#signup route
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     error = None
@@ -71,20 +73,26 @@ def signup():
         conn.close()
     return render_template("signup.html", error=error)
 
+#logout route
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
+#home page display
 @app.route("/home", methods=["GET", "POST"])
 def home():
     if 'uid' not in session:
         return redirect(url_for('login'))
     
-    result = None
+    result = []
     image_path = None
     error = None
 
     if request.method == "POST":
         file = request.files["receipt"]
         if file:
-            
+            #make sure right type of file
             filepath = os.path.join('uploads', file.filename)
             file.save(filepath)
 
@@ -94,7 +102,8 @@ def home():
                 error = f"Unsupported or corrupted file. Allowed types: {', '.join(SUPPORTED_FORMATS)}."
             else:
                 result, image_path = analyze_receipt(filepath, session["uid"])
-    return render_template("home.html", result=result, image_path=image_path, error=error)
+
+    return render_template("home.html", table_data=result, image_path=image_path, error=error)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8081, debug=True)
