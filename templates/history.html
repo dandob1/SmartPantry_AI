@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Purchase History</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>All-Time Purchase History</h1>
+    <nav>
+      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
+      <a class="btn-nav" href="{{ url_for('history') }}">History</a>
+      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
+    </nav>
+  </div>
+
+  {% if purchases %}
+  <form method="post" action="{{ url_for('history') }}">
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Date</th>
+          <th>Item</th>
+          <th>Price</th>
+          <th>Category</th>
+          <th>Subcategory</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for id, name, price, category, subcat, date in purchases %}
+        <tr>
+          <td>
+            <input type="checkbox" name="selected" value="{{ id }}">
+          </td>
+          <td>{{ date }}</td>
+          <td>{{ name }}</td>
+          <td>${{ "%.2f"|format(price) }}</td>
+          <td>{{ category }}</td>
+          <td>{{ subcat }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="actions">
+      <button type="submit" name="delete_selected">Delete Selected</button>
+      <button type="submit" name="clear_all" onclick="return confirm('Are you sure your want to clear your purchase history?');">
+        Clear All
+      </button>
+    </div>
+  </form>
+  {% else %}
+    <p>No purchases found.</p>
+  {% endif %}
+</body>
+</html>
