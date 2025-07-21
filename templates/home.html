@@ -7,7 +7,11 @@
 <body>
     <div class="header">
         <h1>Receipt Analyzer</h1>
-        <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
+        <nav>
+      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
+      <a class="btn-nav" href="{{ url_for('history') }}">History</a>
+      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
+    </nav>
     </div>
     
     <div class="supported-formats">

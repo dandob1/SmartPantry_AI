@@ -105,5 +105,41 @@ def home():
 
     return render_template("home.html", table_data=result, image_path=image_path, error=error)
 
+#see all items bought page/control delete
+@app.route("/history", methods=["GET", "POST"])
+def history():
+    if 'uid' not in session:
+        return redirect(url_for('login'))
+
+    uid = session['uid']
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        #delete all
+        if 'clear_all' in request.form:
+            cur.execute("""DELETE FROM receiptData WHERE rid IN (SELECT rid FROM receipt WHERE uid = ?)""", (uid,))
+            conn.commit()
+        # delete only some
+        elif 'delete_selected' in request.form:
+            ids = request.form.getlist('selected')
+            if ids:
+                placeholders = ",".join("?" for _ in ids)
+                cur.execute(f"DELETE FROM receiptData WHERE id IN ({placeholders})", ids)
+                conn.commit()
+
+    # always re-fetch current rows
+    cur.execute("""
+        SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, r.date_uploaded
+        FROM receiptData d
+        JOIN receipt r ON d.rid = r.rid
+        WHERE r.uid = ?
+        ORDER BY r.date_uploaded DESC
+    """, (uid,))
+    rows = cur.fetchall()
+    conn.close()
+
+    return render_template("history.html", purchases=rows)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8081, debug=True)

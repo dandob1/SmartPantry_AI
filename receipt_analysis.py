@@ -226,6 +226,34 @@ def analyze_receipt(input_file_name, uid):
             items_for_db.append(row)
 
         image_path = plot_pie_chart(totals)
+
+    raw_names = [row[0] for row in items_for_db]
+    cleanup = openai_client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    """You are a data-cleaning assistant.
+                    Given a JSON array of product descriptions OCRd from grocery receipts, return ONLY a JSON array of human-friendly product names, e.g.:
+                    '["ORGANIC RND YELLOW TORT. CHIPS", …] → ["Organic Yellow Tortilla Chips", …]'
+                    DO NOT include any explanation—just output the JSON array."""
+                )
+            },
+            {
+                "role": "user",
+                "content": json.dumps(raw_names)
+            }
+        ]
+    )
+    clean_names = json.loads(cleanup.choices[0].message.content)
+
+    # rebuild items_for_db with the cleaned names
+    items_for_db = [
+        (clean_names[i], price, cat, sub)
+        for i, (_, price, cat, sub) in enumerate(items_for_db)
+    ]
+
     #put into first table
     cur.execute(
         "INSERT INTO receipt (uid, total_spend, image_path) VALUES (?, ?, ?)",
