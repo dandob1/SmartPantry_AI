@@ -6,14 +6,17 @@
 </head>
 <body>
   <div class="header">
-    <h1>All-Time Purchase History</h1>
+    <h1>Current Items</h1>
     <nav>
       <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
-      <a class="btn-nav" href="{{ url_for('history') }}">History</a>
+      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
       <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
       <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
     </nav>
   </div>
+  <h5>This page is home to items you currently have stocked in your pantry. Feel free to use the "add item" tool to individually include any remaining products you would like to add to your digital pantry! Make sure to delete all 
+    items you no longer have in stock to keep your pantry up to date.</h5>
+  <h6>Note: only items in the "grocery" and "other" category are currently displayed, please press see all if you would like to view the remaining categories.</h6>
 
  <form method="post" action="{{ url_for('history') }}" class="add-form">
   <input type="text" name="new_item" placeholder="Enter item name (e.g. Banana)" required>
@@ -21,21 +24,23 @@
 </form>
 
 {% if error and override_item %}
-  <!-- duplicate warning + override form -->
   <form method="post" action="{{ url_for('history') }}" class="error-override">
     <p>{{ error|safe }} Choose another name, or:</p>
-    <!-- carry over the item and flag -->
     <input type="hidden" name="new_item" value="{{ override_item }}">
     <input type="hidden" name="force_add" value="1">
     <button type="submit" name="add_item">Add Anyway</button>
     <button type="submit">Cancel</button>
   </form>
 {% elif error %}
-  <!-- regular errors -->
   <div class="error">{{ error|safe }}</div>
 {% endif %}
 
   {% if purchases %}
+  <form method="post" action="{{ url_for('history') }}" style="display:inline-block; margin-bottom:1em;">
+  <button type="submit" name="toggle_all">
+    {{ 'See Groceries' if show_all else 'See All' }}
+  </button>
+</form>
   <form method="post" action="{{ url_for('history') }}">
     <table>
       <thead>

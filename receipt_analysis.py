@@ -247,13 +247,17 @@ def analyze_receipt(input_file_name, uid):
         ]
     )
     clean_names = json.loads(cleanup.choices[0].message.content)
-
+    error = None
     # rebuild items_for_db with the cleaned names
+    original_items = items_for_db.copy()
+    #check if all rows outputted
+    if len(clean_names) != len(original_items):
+        error = f"Sorry an error happened. Missing some rows: {len(clean_names)} outputted vs {len(original_items)} originals"
     items_for_db = [
-        (clean_names[i], price, cat, sub)
-        for i, (_, price, cat, sub) in enumerate(items_for_db)
+        (clean_name, price, category, subcategory)
+        for ( _ , price, category, subcategory), clean_name
+        in zip(original_items, clean_names)
     ]
-
     #put into first table
     cur.execute(
         "INSERT INTO receipt (uid, total_spend, image_path) VALUES (?, ?, ?)",
@@ -270,7 +274,7 @@ def analyze_receipt(input_file_name, uid):
     conn.commit()
     conn.close()
             
-    return items_for_db, image_path
+    return items_for_db, image_path, error
 
 #ai that will classify individual items added
 def classify_item(name: str, existing_items: list[str]):

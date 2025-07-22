@@ -89,6 +89,7 @@ def home():
     image_path = None
     error = None
     total_cost = 0.0
+    broken = None
 
     if request.method == "POST":
         file = request.files["receipt"]
@@ -102,12 +103,12 @@ def home():
             if ext not in SUPPORTED_FORMATS or type not in ALLOWED_TYPES:
                 error = f"Unsupported or corrupted file. Allowed types: {', '.join(SUPPORTED_FORMATS)}."
             else:
-                result, image_path = analyze_receipt(filepath, session["uid"])
+                result, image_path, broken = analyze_receipt(filepath, session["uid"])
             
             #items = result  # Assign result to items if result contains the list of items
             total_cost = sum(item[1] for item in result)
 
-    return render_template("home.html", table_data=result, image_path=image_path,total_cost=total_cost, error=error)
+    return render_template("home.html", table_data=result, image_path=image_path,total_cost=total_cost, error=error, broken=broken)
 
 #see all items bought page/control delete
 @app.route("/history", methods=["GET", "POST"])
@@ -120,6 +121,11 @@ def history():
     cur = conn.cursor()
     error = None
     override_item = None
+    #see all/less button
+    show_all = session.get('show_all', False)
+    if request.method == "POST" and 'toggle_all' in request.form:
+        show_all = not show_all
+        session['show_all'] = show_all
 
     if 'add_item' in request.form:
             item = request.form.get('new_item','').strip()
@@ -153,8 +159,7 @@ def history():
     if request.method == "POST":
         #delete all
         if 'clear_all' in request.form:
-            cur.execute("""SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
-                FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? ORDER BY r.date_uploaded DESC""", (uid,))
+            cur.execute("""DELETE FROM receiptData WHERE rid IN (SELECT rid FROM receipt WHERE uid = ?)""", (uid,))
             conn.commit()
         # delete only some
         elif 'delete_selected' in request.form:
@@ -165,13 +170,18 @@ def history():
                 conn.commit()
 
     #get rows for history
-    cur.execute("""
-        SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
-        FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? ORDER BY r.date_uploaded DESC""", (uid,))
+    if show_all:
+        cur.execute("""
+            SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
+            FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? ORDER BY r.date_uploaded DESC""", (uid,))
+    else:
+        cur.execute("""
+            SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
+            FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? AND category IN ('Groceries', 'Other') ORDER BY r.date_uploaded DESC""", (uid,))
     rows = cur.fetchall()
     conn.close()
 
-    return render_template("history.html", purchases=rows, error=error, override_item=override_item)
+    return render_template("history.html", purchases=rows, error=error, show_all=show_all, override_item=override_item)
 
 #financial page data
 @app.route("/financial")
@@ -183,13 +193,13 @@ def financial():
 
     conn = get_db_connection()
     cur = conn.cursor()
-
+    #current total spending
     cur.execute("""SELECT COALESCE(SUM(d.itemPrice),0) FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (uid,))
     current_total = cur.fetchone()[0]
-
+    #all time total spending
     cur.execute("""SELECT COALESCE(SUM(total_spend),0) FROM receipt WHERE uid = ?""", (uid,))
     total = cur.fetchone()[0]
-
+    #dates for graph
     cur.execute("""SELECT date_uploaded, total_spend FROM receipt WHERE uid = ? ORDER BY date_uploaded""", (uid,))
     rows = cur.fetchall()
     conn.close()

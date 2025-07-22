@@ -9,7 +9,7 @@
         <h1>Receipt Analyzer</h1>
         <nav>
       <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
-      <a class="btn-nav" href="{{ url_for('history') }}">History</a>
+      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
       <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
       <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
     </nav>
@@ -33,6 +33,12 @@
     <div class="error">
         <h3>Error:</h3>
         <p>{{ error }}</p>
+    </div>
+    {% endif %}
+    {% if broken %}
+    <div class="error">
+        <h3>Error:</h3>
+        <p>{{ broken }}</p>
     </div>
     {% endif %}
 
