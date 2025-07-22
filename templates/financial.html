@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Financial Summary</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Financial Summary</h1> 
+        <link rel="stylesheet" href="/static/css/styles.css">
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <nav>
+      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
+      <a class="btn-nav" href="{{ url_for('history') }}">History</a>
+      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
+      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
+    </nav>
+  </div>
+
+  <div class="content">
+    <h2>Your Spending</h2>
+    <p><strong>Current Total (active items):</strong>
+       ${{ "%.2f"|format(current_total) }}</p>
+    <p><strong>All-Time Total (including deleted):</strong>
+       ${{ "%.2f"|format(all_time_total) }}</p>
+
+<div id="chart" style="width:100%;height:600px;"></div>
+
+    <script>
+      const xData = {{ x_vals|tojson }};
+      const yData = {{ y_vals|tojson }};
+
+      const trace = {
+        x: xData,
+        y: yData,
+        mode: 'lines+markers',
+        type: 'scatter'
+      };
+
+      const layout = {
+        title: 'Cumulative Spending Over Time',
+        xaxis: {
+          title: 'Date',
+          type: 'date',
+          rangeselector: {
+            buttons: [
+              {count: 12, label: '12h', step: 'hour', stepmode: 'backward'},
+              {count: 1, label: '1d', step: 'day', stepmode: 'backward'},
+              {count: 7, label: '1w', step: 'day', stepmode: 'backward'},
+              {count: 1, label: '1m', step: 'month', stepmode: 'backward'},
+              {count: 1, label: '1y', step: 'year', stepmode: 'backward'},
+              {step: 'all'}
+            ]
+          },
+          rangeslider: {visible: true}
+        },
+        yaxis: {
+          title: 'Total Spent ($)'
+        }
+      };
+
+      Plotly.newPlot('chart', [trace], layout, {responsive: true});
+    </script>
+  </div>
+</body>
+</html>
