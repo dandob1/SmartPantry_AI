@@ -26,41 +26,44 @@
 
 <div id="chart" style="width:100%;height:600px;"></div>
 
-    <script>
-      const xData = {{ x_vals|tojson }};
-      const yData = {{ y_vals|tojson }};
+    <script id="plot-data" type="application/json">
+  {
+    "x": {{ x_vals | tojson | safe }},
+    "y": {{ y_vals | tojson | safe }}
+  }
+</script>
 
-      const trace = {
-        x: xData,
-        y: yData,
-        mode: 'lines+markers',
-        type: 'scatter'
-      };
+<script>
+  const rawData = JSON.parse(document.getElementById('plot-data').textContent);
+  const trace = {
+    x: rawData.x,
+    y: rawData.y,
+    mode: 'lines+markers',
+    type: 'scatter'
+  };
 
-      const layout = {
-        title: 'Cumulative Spending Over Time',
-        xaxis: {
-          title: 'Date',
-          type: 'date',
-          rangeselector: {
-            buttons: [
-              {count: 12, label: '12h', step: 'hour', stepmode: 'backward'},
-              {count: 1, label: '1d', step: 'day', stepmode: 'backward'},
-              {count: 7, label: '1w', step: 'day', stepmode: 'backward'},
-              {count: 1, label: '1m', step: 'month', stepmode: 'backward'},
-              {count: 1, label: '1y', step: 'year', stepmode: 'backward'},
-              {step: 'all'}
-            ]
-          },
-          rangeslider: {visible: true}
-        },
-        yaxis: {
-          title: 'Total Spent ($)'
-        }
-      };
+  const layout = {
+    title: 'Cumulative Spending Over Time',
+    xaxis: {
+      title: 'Date',
+      type: 'date',
+      rangeselector: {
+        buttons: [
+          {count: 12, label: '12h', step: 'hour', stepmode: 'backward'},
+          {count: 1, label: '1d', step: 'day', stepmode: 'backward'},
+          {count: 7, label: '1w', step: 'day', stepmode: 'backward'},
+          {count: 1, label: '1m', step: 'month', stepmode: 'backward'},
+          {count: 1, label: '1y', step: 'year', stepmode: 'backward'},
+          {step: 'all'}
+        ]
+      },
+      rangeslider: { visible: true }
+    },
+    yaxis: { title: 'Total Spent ($)' }
+  };
 
-      Plotly.newPlot('chart', [trace], layout, {responsive: true});
-    </script>
+  Plotly.newPlot('chart', [trace], layout, {responsive: true});
+</script>
   </div>
 </body>
 </html>
