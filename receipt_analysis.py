@@ -271,3 +271,50 @@ def analyze_receipt(input_file_name, uid):
     conn.close()
             
     return items_for_db, image_path
+
+#ai that will classify individual items added
+def classify_item(name: str):
+    client = AzureOpenAI(
+        azure_endpoint="https://aisdevelopment.openai.azure.com/",
+            api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
+            api_version="2024-12-01-preview",
+        )
+    #provide system prompt, same as before
+    system = {
+        "role": "system",
+        "content": (
+            """You're a helpful assistant that categorizes spending from receipts into budget categories
+            Classify a single grocery item into one of these main categories, ITS CRITICAL you adhere to choose only from the categories provided:
+                        - Groceries... subcategories: Produce, Meat & Poultry, Dairy, Bakery, Pantry & Dry Goods, Frozen Foods, Snacks & Candy, Beverages (non-alcoholic), Alcoholic Beverages, Household Supplies, Pharmacy / Health Goods, Extras
+                        - Dining Out... subcategories: Fast Food, Casual Dining, Fine Dining, Coffee Shops, Takeout & Delivery, Bars & Pubs
+                        - Transportation... Subcategories: Gasoline, Parking, Public Transit, Car Maintenance, Tolls & Fees, Rideshare (Uber/Lyft), Travel
+                        - Clothing & Accessories... subcategories: Mens Clothing, Womens Clothing, Childrens Clothing, Footwear, Accessories
+                        - Leisure & Entertainment... subcategories: Movies & Events, Streaming Services, Games & Toys, Hobbies & Crafts, Sports & Fitness, Extras
+                        - If an item does not fit into any of these categories, classify it as Other.
+            Output EXACTLY one JSON object, nothing else, e.g.: '{"category":"Groceries","subcategory":"Produce"}'"""
+        )
+    }
+
+    user = {
+        "role": "user",
+        "content": f"Item name: {name}"
+    }
+
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[system, user],
+        temperature=0,
+    )
+
+    answer = response.choices[0].message.content.strip()
+    if not answer:
+        return "Other", ""
+
+    answer = re.sub(r"^```json\s*|```$", "", answer, flags=re.IGNORECASE).strip()
+
+    try:
+        obj = json.loads(answer)
+    except json.JSONDecodeError:
+        return "Other", ""
+
+    return obj.get("category", "Other"), obj.get("subcategory", "")

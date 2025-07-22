@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request
 import os
-from receipt_analysis import analyze_receipt
+from receipt_analysis import analyze_receipt, classify_item
 import magic
 import sqlite3
 from flask import Flask, session, render_template, redirect, url_for, request
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "poop fart"
@@ -114,6 +115,21 @@ def history():
     uid = session['uid']
     conn = get_db_connection()
     cur = conn.cursor()
+    if 'add_item' in request.form:
+            item = request.form.get('new_item','').strip()
+            if item:
+                cat, sub = classify_item(item)
+                time = datetime.utcnow().isoformat(sep=' ')
+                cur.execute(
+                    "INSERT INTO receipt (uid, total_spend, date_uploaded) VALUES (?,?,?)",
+                    (uid, 0.00, time)
+                )
+                rid = cur.lastrowid
+                cur.execute(
+                    "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?,?,?,?,?)",
+                    (rid, item, 0.00, cat, sub)
+                )
+                conn.commit()
 
     if request.method == "POST":
         #delete all
