@@ -273,7 +273,7 @@ def analyze_receipt(input_file_name, uid):
     return items_for_db, image_path
 
 #ai that will classify individual items added
-def classify_item(name: str):
+def classify_item(name: str, existing_items: list[str]):
     client = AzureOpenAI(
         azure_endpoint="https://aisdevelopment.openai.azure.com/",
             api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
@@ -283,21 +283,28 @@ def classify_item(name: str):
     system = {
         "role": "system",
         "content": (
-            """You're a helpful assistant that categorizes spending from receipts into budget categories
-            Classify a single grocery item into one of these main categories, ITS CRITICAL you adhere to choose only from the categories provided:
+            """You're a helpful assistant that categorizes spending from receipts into budget categories.
+            You will receive:
+                • existing_items: an array of strings (items already in the user's history)
+                • new_item: a single string
+            First, very carefully examine each item and do a case-insensitive substring check: if new_item is already represented in existing_items, return exactly `{ \"duplicate\": true }` and nothing else. If an item such as purple grapes is already in the dictionary, allow the inserion of green grapes. If windex is already inserted, allow window cleaner.. etc. Do not allow exact duplicated like oreo cookies and oreos, or oreo.
+            Then you MUST, classify a single grocery item into one of these main categories, ITS CRITICAL you adhere to choose only from the categories provided:
                         - Groceries... subcategories: Produce, Meat & Poultry, Dairy, Bakery, Pantry & Dry Goods, Frozen Foods, Snacks & Candy, Beverages (non-alcoholic), Alcoholic Beverages, Household Supplies, Pharmacy / Health Goods, Extras
                         - Dining Out... subcategories: Fast Food, Casual Dining, Fine Dining, Coffee Shops, Takeout & Delivery, Bars & Pubs
                         - Transportation... Subcategories: Gasoline, Parking, Public Transit, Car Maintenance, Tolls & Fees, Rideshare (Uber/Lyft), Travel
                         - Clothing & Accessories... subcategories: Mens Clothing, Womens Clothing, Childrens Clothing, Footwear, Accessories
                         - Leisure & Entertainment... subcategories: Movies & Events, Streaming Services, Games & Toys, Hobbies & Crafts, Sports & Fitness, Extras
                         - If an item does not fit into any of these categories, classify it as Other.
-            Output EXACTLY one JSON object, nothing else, e.g.: '{"category":"Groceries","subcategory":"Produce"}'"""
+            Output EXACTLY one JSON object, nothing else if you passed step one, e.g.: '{"category":"Groceries","subcategory":"Produce"}'"""
         )
     }
 
     user = {
         "role": "user",
-        "content": f"Item name: {name}"
+        "content": json.dumps({
+            "existing_items": existing_items,
+            "new_item": name
+        })
     }
 
     response = client.chat.completions.create(
@@ -307,14 +314,14 @@ def classify_item(name: str):
     )
 
     answer = response.choices[0].message.content.strip()
-    if not answer:
-        return "Other", ""
-
     answer = re.sub(r"^```json\s*|```$", "", answer, flags=re.IGNORECASE).strip()
 
     try:
         obj = json.loads(answer)
     except json.JSONDecodeError:
         return "Other", ""
-
-    return obj.get("category", "Other"), obj.get("subcategory", "")
+    
+    if obj.get("duplicate"):
+        return None, None
+    else:
+        return obj.get("category", "Other"), obj.get("subcategory", "")

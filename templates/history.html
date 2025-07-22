@@ -14,15 +14,25 @@
     </nav>
   </div>
 
-  <form method="post" action="{{ url_for('history') }}" class="add-form">
-    <input
-      type="text"
-      name="new_item"
-      placeholder="Enter item name (e.g. banana)"
-      required
-    >
-    <button type="submit" name="add_item">Add Item</button>
+ <form method="post" action="{{ url_for('history') }}" class="add-form">
+  <input type="text" name="new_item" …>
+  <button type="submit" name="add_item">Add Item</button>
+</form>
+
+{% if error and override_item %}
+  <!-- duplicate warning + override form -->
+  <form method="post" action="{{ url_for('history') }}" class="error-override">
+    <p>{{ error|safe }} Choose another name, or:</p>
+    <!-- carry over the item and flag -->
+    <input type="hidden" name="new_item" value="{{ override_item }}">
+    <input type="hidden" name="force_add" value="1">
+    <button type="submit" name="add_item">Add Anyway</button>
+    <button type="submit">Cancel</button>
   </form>
+{% elif error %}
+  <!-- regular errors -->
+  <div class="error">{{ error|safe }}</div>
+{% endif %}
 
   {% if purchases %}
   <form method="post" action="{{ url_for('history') }}">

@@ -4,7 +4,7 @@ from receipt_analysis import analyze_receipt, classify_item
 import magic
 import sqlite3
 from flask import Flask, session, render_template, redirect, url_for, request
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 app.secret_key = "poop fart"
@@ -115,26 +115,43 @@ def history():
     uid = session['uid']
     conn = get_db_connection()
     cur = conn.cursor()
+    error = None
+    override_item = None
+
     if 'add_item' in request.form:
             item = request.form.get('new_item','').strip()
+            forceAdd = request.form.get('force_add') == '1'
+
             if item:
-                cat, sub = classify_item(item)
-                time = datetime.utcnow().isoformat(sep=' ')
-                cur.execute(
-                    "INSERT INTO receipt (uid, total_spend, date_uploaded) VALUES (?,?,?)",
-                    (uid, 0.00, time)
-                )
-                rid = cur.lastrowid
-                cur.execute(
-                    "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?,?,?,?,?)",
-                    (rid, item, 0.00, cat, sub)
-                )
-                conn.commit()
+                #get existing items
+                cur.execute("""SELECT d.itemName FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (uid,))
+                rows = cur.fetchall()
+                existing = []
+                for row in rows:
+                    existing.append(row[0])
+                #classify item and check if its there
+                cat, sub = classify_item(item, existing)
+                if cat is None and not forceAdd:
+                    # duplicate found, show override button
+                    error = f"It looks like <b>{item}</b> is already in your history."
+                    override_item = item
+                else:
+                    #update table
+                    cur.execute("INSERT INTO receipt (uid, total_spend) VALUES (?,?)", (uid, 0.00))
+                    rid = cur.lastrowid
+                    cur.execute(
+                        "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?,?,?,?,?)",
+                        (rid, item, 0.00, cat or "Other", sub or "Force Added")
+                    )
+                    conn.commit()
+                    error = None
+                    override_item = None
 
     if request.method == "POST":
         #delete all
         if 'clear_all' in request.form:
-            cur.execute("""DELETE FROM receiptData WHERE rid IN (SELECT rid FROM receipt WHERE uid = ?)""", (uid,))
+            cur.execute("""SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
+                FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? ORDER BY r.date_uploaded DESC""", (uid,))
             conn.commit()
         # delete only some
         elif 'delete_selected' in request.form:
@@ -144,18 +161,14 @@ def history():
                 cur.execute(f"DELETE FROM receiptData WHERE id IN ({placeholders})", ids)
                 conn.commit()
 
-    # always re-fetch current rows
+    #get rows for history
     cur.execute("""
-        SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, r.date_uploaded
-        FROM receiptData d
-        JOIN receipt r ON d.rid = r.rid
-        WHERE r.uid = ?
-        ORDER BY r.date_uploaded DESC
-    """, (uid,))
+        SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
+        FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? ORDER BY r.date_uploaded DESC""", (uid,))
     rows = cur.fetchall()
     conn.close()
 
-    return render_template("history.html", purchases=rows)
+    return render_template("history.html", purchases=rows, error=error, override_item=override_item)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8081, debug=True)
