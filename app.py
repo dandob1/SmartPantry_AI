@@ -1,4 +1,3 @@
-from flask import Flask, render_template, request
 import os
 from receipt_analysis import analyze_receipt, classify_item
 import magic
@@ -89,6 +88,7 @@ def home():
     result = []
     image_path = None
     error = None
+    total_cost = 0.0
 
     if request.method == "POST":
         file = request.files["receipt"]
@@ -103,8 +103,11 @@ def home():
                 error = f"Unsupported or corrupted file. Allowed types: {', '.join(SUPPORTED_FORMATS)}."
             else:
                 result, image_path = analyze_receipt(filepath, session["uid"])
+            
+            #items = result  # Assign result to items if result contains the list of items
+            total_cost = sum(item[1] for item in result)
 
-    return render_template("home.html", table_data=result, image_path=image_path, error=error)
+    return render_template("home.html", table_data=result, image_path=image_path,total_cost=total_cost, error=error)
 
 #see all items bought page/control delete
 @app.route("/history", methods=["GET", "POST"])
@@ -169,6 +172,38 @@ def history():
     conn.close()
 
     return render_template("history.html", purchases=rows, error=error, override_item=override_item)
+
+#financial page data
+@app.route("/financial")
+def financial():
+    if 'uid' not in session:
+        return redirect(url_for('login'))
+
+    uid = session['uid']
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""SELECT COALESCE(SUM(d.itemPrice),0) FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (uid,))
+    current_total = cur.fetchone()[0]
+
+    cur.execute("""SELECT COALESCE(SUM(total_spend),0) FROM receipt WHERE uid = ?""", (uid,))
+    total = cur.fetchone()[0]
+
+    cur.execute("""SELECT date_uploaded, total_spend FROM receipt WHERE uid = ? ORDER BY date_uploaded""", (uid,))
+    rows = cur.fetchall()
+    conn.close()
+
+    dates = []
+    sums = []
+    running = 0.0
+    for ts_str, amt in rows:
+        date = datetime.fromisoformat(ts_str)
+        dates.append(date.isoformat())
+        running += float(amt)
+        sums.append(running)
+
+    return render_template("financial.html", current_total=current_total, all_time_total=total, x_vals=dates, y_vals=sums)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8081, debug=True)

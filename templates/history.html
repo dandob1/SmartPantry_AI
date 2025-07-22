@@ -10,12 +10,13 @@
     <nav>
       <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
       <a class="btn-nav" href="{{ url_for('history') }}">History</a>
+      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
       <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
     </nav>
   </div>
 
  <form method="post" action="{{ url_for('history') }}" class="add-form">
-  <input type="text" name="new_item" …>
+  <input type="text" name="new_item" placeholder="Enter item name (e.g. Banana)" required>
   <button type="submit" name="add_item">Add Item</button>
 </form>
 
