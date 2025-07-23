@@ -170,18 +170,43 @@ def history():
                 conn.commit()
 
     #get rows for history
-    if show_all:
-        cur.execute("""
-            SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
-            FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? ORDER BY r.date_uploaded DESC""", (uid,))
-    else:
-        cur.execute("""
-            SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date
-            FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ? AND category IN ('Groceries', 'Other') ORDER BY r.date_uploaded DESC""", (uid,))
+    cur.execute("SELECT DISTINCT d.category FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?", (uid,))
+    categories = [row[0] for row in cur.fetchall()]
+
+    cur.execute("SELECT DISTINCT d.subcategory FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?", (uid,))
+    subcategories = [row[0] for row in cur.fetchall()]
+
+    category = request.args.get('filter_category', '').strip()
+    subcategory = request.args.get('filter_subcategory', '').strip()
+    word = request.args.get('search_term', '').strip()
+
+    sql = "SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date FROM receiptData d JOIN receipt r ON d.rid = r.rid"
+    uidis = ["r.uid = ?"]
+    params = [uid]
+
+    if not show_all:
+        uidis.append("d.category IN ('Groceries', 'Other')")
+
+    if category:
+        uidis.append("d.category = ?")
+        params.append(category)
+
+    if subcategory:
+        uidis.append("d.subcategory = ?")
+        params.append(subcategory)
+
+    if word:
+        uidis.append("d.itemName LIKE ?")
+        params.append(f"%{word}%")
+
+    query = (sql + " WHERE " + " AND ".join(uidis) + " ORDER BY r.date_uploaded DESC")
+    cur.execute(query, params)
     rows = cur.fetchall()
+
     conn.close()
 
-    return render_template("history.html", purchases=rows, error=error, show_all=show_all, override_item=override_item)
+    return render_template("history.html", purchases=rows, error=error, show_all=show_all, override_item=override_item, categories=categories,
+        subcategories=subcategories, filter_category=category, filter_subcategory=subcategory,search_term=word)
 
 #financial page data
 @app.route("/financial")

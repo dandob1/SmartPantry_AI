@@ -16,7 +16,6 @@
   </div>
   <h5>This page is home to items you currently have stocked in your pantry. Feel free to use the "add item" tool to individually include any remaining products you would like to add to your digital pantry! Make sure to delete all 
     items you no longer have in stock to keep your pantry up to date.</h5>
-  <h6>Note: only items in the "grocery" and "other" category are currently displayed, please press see all if you would like to view the remaining categories.</h6>
 
  <form method="post" action="{{ url_for('history') }}" class="add-form">
   <input type="text" name="new_item" placeholder="Enter item name (e.g. Banana)" required>
@@ -35,7 +34,58 @@
   <div class="error">{{ error|safe }}</div>
 {% endif %}
 
-  {% if purchases %}
+
+<form method="get" action="{{ url_for('history') }}" class="filter-form">
+  <label>
+    Category
+    <select
+      name="filter_category"
+      onchange="this.form.submit()"
+    >
+      <option value="">All</option>
+      {% for cat in categories %}
+        <option value="{{ cat }}"
+          {% if filter_category == cat %}selected{% endif %}>
+          {{ cat }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>
+    Subcategory
+    <select
+      name="filter_subcategory"
+      onchange="this.form.submit()"
+    >
+      <option value="">All</option>
+      {% for sub in subcategories %}
+        <option value="{{ sub }}"
+          {% if filter_subcategory == sub %}selected{% endif %}>
+          {{ sub }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>
+    Item Name
+    <input
+      type="text"
+      name="search_term"
+      placeholder="Search item…"
+      value="{{ search_term }}"
+    >
+  </label>
+
+  <!-- optional: keep only “Clear” -->
+  <a href="{{ url_for('history') }}">Clear Filters</a>
+    {% if purchases %}
+</form>
+ {%if show_all%}
+    {%elif not show_all%}
+      <h6>Note: only items in the "grocery" and "other" category are currently displayed, please press see all if you would like to view the remaining categories.</h6>
+    {%endif%}
   <form method="post" action="{{ url_for('history') }}" style="display:inline-block; margin-bottom:1em;">
   <button type="submit" name="toggle_all">
     {{ 'See Groceries' if show_all else 'See All' }}
@@ -79,5 +129,29 @@
   {% else %}
     <p>No purchases found.</p>
   {% endif %}
+
+
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form       = document.querySelector('.filter-form');
+  const input      = form.querySelector('input[name="search_term"]');
+  let   debounce;
+
+  // On each keystroke, wait 300ms after the last one before submitting:
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => {
+      form.submit();
+    }, 300);
+  });
+
+  // After reload, put focus (and cursor at end) back into the input:
+  if (input.value) {
+    input.focus();
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
+  }
+});
+</script>
 </body>
 </html>
