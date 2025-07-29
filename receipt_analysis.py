@@ -329,3 +329,66 @@ def classify_item(name: str, existing_items: list[str]):
         return None, None
     else:
         return obj.get("category", "Other"), obj.get("subcategory", "")
+    
+def recipe(pantry_items, difficulty, srequest=""):
+    client = AzureOpenAI(
+        azure_endpoint="https://aisdevelopment.openai.azure.com/",
+        api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
+        api_version="2024-12-01-preview"
+    )
+
+    # the 2 prompts
+    if difficulty == "easy":
+        system_prompt = """You are a professional chef specializing in coming up with creative recipes. 
+        Create recipes that require basic to average cooking skills, use common techniques, and have clear step-by-step instructions.
+        Focus on recipes that can be completed in one hour or less with basic kitchen equipment.
+        You will be provided a list of items, use those to come up with your recipe and assume they only have extra basic condiments and seasonings. 
+        IMPORTANT: You do not have to use all of the ingredients, only use the ones that make sense.
+        IMPORTANT Pt2: If you cannot come up with any appetizing recipe from those ingredients simply say: 'Sorry, I could not make a recipe using only those ingredients. Try adding more and try again!' """
+    else:
+        system_prompt = """You are a professional chef who creates delicious but relatively simple meals. 
+        You will be provided a list of panty items, ignore them and come up with the best tasting dish possible.
+        Be creative and come up with a classic and well known dish that anyone and everyone would like. Use the ingredients provided.. or dont."""
+
+    if pantry_items:
+        pantry_list = ", ".join(pantry_items)  
+    else: 
+        pantry_list = "no specific items"
+    user_prompt = f"""Here is the pantry items: {pantry_list}
+            
+            Please provide:
+            1. Recipe name
+            2. Complete ingredients list (including quantities)
+            3. Step-by-step cooking instructions
+            4. Estimated cooking time
+            5. Number of servings
+            6. Estimated nutrition facts
+            
+            Assume I have basic ingredients like salt, pepper, oil, eggs, and common spices."""
+    if srequest:
+        finalPrompt = f"Special request: {srequest}\n\n{user_prompt}"
+    else:
+        finalPrompt = user_prompt
+
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=[
+        {
+            "role": "system", 
+            "content": system_prompt
+        },
+        {
+            "role": "user", 
+            "content": finalPrompt
+        }
+    ],
+            temperature=0.7,
+            max_tokens=1500
+        )
+        
+        result = completion.choices[0].message.content
+        return result
+        
+    except Exception as e:
+        return f"Sorry, I couldn't generate a recipe at this time. Please try again later. Error: {str(e)}"

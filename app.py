@@ -1,8 +1,8 @@
 import os
-from receipt_analysis import analyze_receipt, classify_item
+from receipt_analysis import analyze_receipt, classify_item, recipe
 import magic
 import sqlite3
-from flask import Flask, session, render_template, redirect, url_for, request
+from flask import Flask, session, render_template, redirect, url_for, request, flash
 from datetime import datetime, timezone
 
 app = Flask(__name__)
@@ -105,7 +105,7 @@ def home():
             else:
                 result, image_path, broken = analyze_receipt(filepath, session["uid"])
             
-            #items = result  # Assign result to items if result contains the list of items
+            #items = result
             total_cost = sum(item[1] for item in result)
 
     return render_template("home.html", table_data=result, image_path=image_path,total_cost=total_cost, error=error, broken=broken)
@@ -239,6 +239,92 @@ def financial():
         sums.append(running)
 
     return render_template("financial.html", current_total=current_total, all_time_total=total, x_vals=dates, y_vals=sums)
+
+@app.route("/recipes", methods=["GET", "POST"])
+def recipes():
+    if 'uid' not in session:
+        return redirect(url_for('login'))
+
+    #get pantry
+    conn = get_db_connection()
+    cur  = conn.cursor()
+    cur.execute("""SELECT d.itemName FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (session['uid'],))
+    pantry = [row[0] for row in cur.fetchall()]
+    
+    #get saved items
+    cur.execute(
+        "SELECT recipe_id, name, date_saved FROM savedRecipe WHERE uid = ? ORDER BY date_saved DESC",
+        (session['uid'],)
+    )
+    saved = cur.fetchall()
+    conn.close()
+
+    #generate
+    result = None
+    srequest = ""
+    if request.method == "POST":
+        #save vs delete a recipe
+        if request.form.get('action') == 'save':
+            name = request.form.get('recipe_name', '').strip()
+            raw  = request.form.get('recipe_data')
+
+            if not name:
+                flash('Please provide a name for your recipe.', 'error')
+                return redirect(url_for('recipes'))
+
+            conn = get_db_connection()
+            cur  = conn.cursor()
+            cur.execute("INSERT INTO savedRecipe (uid, name, ingredients, instructions)VALUES (?, ?, ?, ?)", (session['uid'], name, raw, raw))
+            conn.commit()
+            conn.close()
+
+            flash(f'Recipe “{name}” saved successfully!')
+            return redirect(url_for('recipes'))
+        elif request.form.get('action') == 'delete':
+            rid = request.form.get('recipe_id')
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("DELETE FROM savedRecipe WHERE recipe_id = ? AND uid = ?", (rid, session['uid']))
+            conn.commit()
+            conn.close()
+            flash('Saved recipe deleted.')
+            return redirect(url_for('recipes'))
+        else:
+            #get a recipe
+            difficulty = request.form.get("difficulty")
+            srequest = request.form.get("srequest", "").strip()
+            result = recipe(pantry, difficulty, srequest)
+
+    return render_template("recipes.html", pantry=pantry, recipe=result, saved_recipes=saved, srequest=srequest)
+
+@app.route("/saved_recipes")
+def saved_recipes():
+    if 'uid' not in session:
+        return redirect(url_for('login'))
+    conn = get_db_connection()
+    cur  = conn.cursor()
+    cur.execute("SELECT recipe_id, name, date_saved FROM savedRecipe WHERE uid = ? ORDER BY date_saved DESC", (session['uid'],))
+    saved = cur.fetchall()
+    conn.close()
+    return render_template("saved_recipes.html", recipes=saved)
+
+@app.route("/recipes/<int:recipe_id>")
+def view_saved(recipe_id):
+    if 'uid' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+    cur  = conn.cursor()
+    cur.execute("SELECT name, ingredients, instructions, date_saved FROM savedRecipe WHERE recipe_id = ? AND uid = ?", (recipe_id, session['uid']))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        flash("Recipe not found or you don't have permission to view it.")
+        return redirect(url_for('recipes'))
+
+    name, ingredients, instructions, date_saved = row
+    return render_template("view_recipe.html", name=name, ingredients=ingredients, instructions=instructions, date_saved=date_saved)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8081, debug=True)

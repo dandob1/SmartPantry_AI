@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>View Saved Recipe</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="header">
+    <h1>{{ name }}</h1>
+    <small>Saved on {{ date_saved }}</small>
+    <nav>
+      <a href="{{ url_for('recipes') }}">← Back to Recipes</a>
+    </nav>
+  </div>
+  <div class="content">
+    <h2>Your Recipe:</h2>
+    <pre>{{ ingredients }}</pre>
+
+  </div>
+</body>
+</html>

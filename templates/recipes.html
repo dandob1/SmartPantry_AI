@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Recipe Recommendations</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="header">
+    <h1>Recipe Recommendations</h1>
+    <nav>
+      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
+      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
+      <a class="btn-nav" href="{{ url_for('recipes') }}">Recipes</a>
+      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
+      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
+    </nav>
+  </div>
+
+  <div class="content">
+    <p>
+      This page will auto-generate a recipe for you based on
+      the items currently in your pantry. Choose your preferred
+      method to get started.
+      </p>
+<p>
+      Use only Items in Pantry: Will generate a recipe strictly with the items actively in your pantry and a few expected basic ingredients.
+      </p>
+        <p>
+      Get Creative: Will generate a recipe that is widely known and appreciated with or without items actively in your pantry.
+    
+    </p>
+
+    <div class="recipe-buttons">
+      <form method="post" action="{{ url_for('recipes') }}">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="srequest">
+            Special requests (e.g., dietary restrictions, cuisine style):
+          </label>
+          <textarea
+            id="srequest"
+            name="srequest"
+            class="form-control"
+            rows="2"
+          >{{ srequest }}</textarea>
+        </div>
+
+        <button
+          type="submit"
+          name="difficulty"
+          value="easy"
+          class="btn-primary"
+        >
+          Use only Items in Pantry
+        </button>
+        <button
+          type="submit"
+          name="difficulty"
+          value="hard"
+          class="btn-secondary"
+        >
+          Get Creative
+        </button>
+      </form>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, msg in messages %}
+            <li class="flash-{{ category }}">{{ msg }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {# ——— Only show this block when we have a freshly generated recipe ——— #}
+    {% if recipe %}
+      <div class="recipe-container">
+        <h2>Your Generated Recipe</h2>
+        {{ recipe|safe }}
+
+        <form method="post" action="{{ url_for('recipes') }}">
+          <input type="hidden" name="action" value="save">
+          <input type="hidden" name="recipe_data" value="{{ recipe|e }}">
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label for="recipe_name">Recipe Name:</label>
+            <input
+              type="text"
+              id="recipe_name"
+              name="recipe_name"
+              required
+              class="form-control"
+              value="{{ recipe.split('\n')[0] }}"
+            >
+          </div>
+
+          <button type="submit" class="btn-primary">Save Recipe</button>
+        </form>
+      </div>
+    {% endif %}
+
+
+    {# ——— Saved recipes are entirely separate and never reference `recipe` ——— #}
+    <button id="toggle-saved" class="btn-secondary" style="margin-top:20px;">
+      Show Saved Recipes
+    </button>
+    <div id="saved-recipes" style="display:none; margin-top:10px;">
+      {% if saved_recipes %}
+        <ul>
+          {% for r in saved_recipes %}
+            <li>
+              <strong>{{ r[1] }}</strong> ({{ r[2] }})
+              <a href="{{ url_for('view_saved', recipe_id=r[0]) }}" style="margin-left:10px;">
+                View
+              </a>
+              <form method="post" action="{{ url_for('recipes') }}" style="display:inline; margin-left:10px;">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="recipe_id" value="{{ r[0] }}">
+                <button type="submit" class="btn-secondary">Delete</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p><em>No saved recipes yet.</em></p>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById('toggle-saved').addEventListener('click', function() {
+      var div = document.getElementById('saved-recipes');
+      if (div.style.display === 'none') {
+        div.style.display = 'block';
+        this.textContent = 'Hide Saved Recipes';
+      } else {
+        div.style.display = 'none';
+        this.textContent = 'Show Saved Recipes';
+      }
+    });
+  </script>
+</body>
+</html>

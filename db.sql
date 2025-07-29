@@ -30,3 +30,14 @@ CREATE TABLE receiptData (
     subcategory VARCHAR(100),
     FOREIGN KEY (rid) REFERENCES receipt(rid)
 ); 
+
+DROP TABLE IF EXISTS savedRecipe;
+CREATE TABLE savedRecipe (
+    recipe_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid       INTEGER NOT NULL,
+    name      VARCHAR(150) NOT NULL,
+    ingredients TEXT     NOT NULL,
+    instructions TEXT     NOT NULL,
+    date_saved   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (uid) REFERENCES User(uid)
+);
