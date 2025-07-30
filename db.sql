@@ -8,7 +8,7 @@ CREATE TABLE User (
     password VARCHAR(255) NOT NULL
 );
 
---Entire Reciept
+--whole receipt
 DROP TABLE IF EXISTS receipt;
 CREATE TABLE receipt (
     rid INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,7 +19,7 @@ CREATE TABLE receipt (
     FOREIGN KEY (uid) REFERENCES User(uid)
 ); 
 
---Each Individual Reciept List
+--each receipt
 DROP TABLE IF EXISTS receiptData;
 CREATE TABLE receiptData (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

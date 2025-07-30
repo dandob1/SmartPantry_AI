@@ -1,21 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>View Saved Recipe</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Analyzer - {{ name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
 </head>
 <body>
-  <div class="header">
-    <h1>{{ name }}</h1>
-    <small>Saved on {{ date_saved }}</small>
-    <nav>
-      <a href="{{ url_for('recipes') }}">← Back to Recipes</a>
-    </nav>
-  </div>
-  <div class="content">
-    <h2>Your Recipe:</h2>
-    <pre>{{ ingredients }}</pre>
+    <div class="container main-content">
+        <div class="recipe-container">
+            <!-- header -->
+            <div class="recipe-header">
+                <div class="recipe-header-content">
+                    <h1 class="recipe-title">{{ name }}</h1>
+                    <div class="recipe-meta">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Saved on {{ date_saved }}
+                    </div>
+                    <a href="{{ url_for('recipes') }}" class="back-nav">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to Recipes
+                    </a>
+                </div>
+            </div>
 
-  </div>
+            <!-- the recipe -->
+            <div class="recipe-content">
+                <div class="content-header">
+                    <i class="fas fa-utensils"></i>
+                    <h2>Your Saved Recipe</h2>
+                </div>
+                
+                <div class="recipe-text">{{ ingredients }}</div>
+            </div>
+
+            <!-- buttons at bottom -->
+            <div class="action-buttons">
+                <h4 class="mb-3">
+                    <i class="fas fa-tools me-2 text-secondary"></i>
+                    Recipe Actions
+                </h4>
+                
+                <button onclick="window.print()" class="btn-print">
+                    <i class="fas fa-print me-2"></i>
+                    Print Recipe
+                </button>
+                
+                <button onclick="shareRecipe()" class="btn-share">
+                    <i class="fas fa-share-alt me-2"></i>
+                    Share Recipe
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- easter egg -->
+    <div class="floating-chef" onclick="scrollToTop()" title="Back to top">
+        <i class="fas fa-chef-hat"></i>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Scroll to top function
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Share recipe function
+        function shareRecipe() {
+            const recipeName = "{{ name }}";
+            const recipeText = `{{ ingredients }}`.replace(/\n/g, '\n');
+            
+            if (navigator.share) {
+                // Use native share API if available
+                navigator.share({
+                    title: recipeName,
+                    text: `Check out this recipe: ${recipeName}\n\n${recipeText}`,
+                    url: window.location.href
+                }).catch(err => {
+                    console.log('Error sharing:', err);
+                    fallbackShare(recipeName, recipeText);
+                });
+            } else {
+                fallbackShare(recipeName, recipeText);
+            }
+        }
+
+        // Fallback share function
+        function fallbackShare(recipeName, recipeText) {
+            const shareText = `${recipeName}\n\n${recipeText}\n\nShared from Receipt Analyzer`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showToast('Recipe copied to clipboard!', 'success');
+                }).catch(() => {
+                    showShareModal(shareText);
+                });
+            } else {
+                showShareModal(shareText);
+            }
+        }
+
+        // Show share modal
+        function showShareModal(text) {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Share Recipe</h5>
+                                <button type="button" class="btn-close" onclick="this.closest('.modal').remove()"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Copy the text below to share your recipe:</p>
+                                <textarea class="form-control" rows="10" readonly>${text}</textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                                <button class="btn btn-primary" onclick="selectAndCopy(this)">Select All</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Select and copy text
+        function selectAndCopy(button) {
+            const textarea = button.closest('.modal').querySelector('textarea');
+            textarea.select();
+            document.execCommand('copy');
+            button.textContent = 'Copied!';
+            setTimeout(() => {
+                button.closest('.modal').remove();
+            }, 1000);
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Show/hide floating chef based on scroll
+        window.addEventListener('scroll', function() {
+            const floatingChef = document.querySelector('.floating-chef');
+            if (window.scrollY > 300) {
+                floatingChef.style.opacity = '1';
+                floatingChef.style.transform = 'scale(1)';
+            } else {
+                floatingChef.style.opacity = '0.7';
+                floatingChef.style.transform = 'scale(0.8)';
+            }
+        });
+
+        // Add some animation on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate recipe content on load
+            const recipeContent = document.querySelector('.recipe-content');
+            const actionButtons = document.querySelector('.action-buttons');
+            
+            recipeContent.style.opacity = '0';
+            recipeContent.style.transform = 'translateY(30px)';
+            actionButtons.style.opacity = '0';
+            actionButtons.style.transform = 'translateY(30px)';
+            
+            setTimeout(() => {
+                recipeContent.style.transition = 'all 0.6s ease';
+                recipeContent.style.opacity = '1';
+                recipeContent.style.transform = 'translateY(0)';
+            }, 300);
+            
+            setTimeout(() => {
+                actionButtons.style.transition = 'all 0.6s ease';
+                actionButtons.style.opacity = '1';
+                actionButtons.style.transform = 'translateY(0)';
+            }, 600);
+
+            // Add hover effects to recipe text sections
+            const recipeText = document.querySelector('.recipe-text');
+            if (recipeText) {
+                // Add smooth highlighting for better readability
+                recipeText.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.01)';
+                    this.style.boxShadow = 'inset 0 4px 8px rgba(0,0,0,0.1)';
+                });
+                
+                recipeText.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                    this.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.05)';
+                });
+            }
+
+            // Easter egg: Chef animation on multiple clicks
+            let chefClickCount = 0;
+            const floatingChef = document.querySelector('.floating-chef');
+            
+            floatingChef.addEventListener('click', function() {
+                chefClickCount++;
+                
+                if (chefClickCount === 3) {
+                    // Special animation after 5 clicks
+                    this.style.animation = 'spin 2s ease-in-out';
+                    showToast('🍳 Happy cooking! 👨‍🍳', 'success');
+                    chefClickCount = 0;
+                    
+                    setTimeout(() => {
+                        this.style.animation = '';
+                    }, 2000);
+                }
+            });
+
+            // Add CSS animation for the chef spin
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg) scale(1); }
+                    50% { transform: rotate(180deg) scale(1.2); }
+                    100% { transform: rotate(360deg) scale(1); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+P or Cmd+P for print
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                window.print();
+            }
+            
+            // Ctrl+S or Cmd+S for share
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                shareRecipe();
+            }
+            
+            // ESC to go back
+            if (e.key === 'Escape') {
+                window.location.href = "{{ url_for('recipes') }}";
+            }
+        });
+    </script>
 </body>
 </html>

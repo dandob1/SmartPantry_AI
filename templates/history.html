@@ -1,157 +1,227 @@
-<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Purchase History</title>
-  <link rel="stylesheet" href="/static/css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Analyzer - Current Pantry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
 </head>
 <body>
-  <div class="header">
-    <h1>Current Items</h1>
-    <nav>
-      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
-      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
-       <a class="btn-nav" href="{{ url_for('recipes') }}">Recipes</a>
-      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
-      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
-    </nav>
-  </div>
-  <h5>This page is home to items you currently have stocked in your pantry. Feel free to use the "add item" tool to individually include any remaining products you would like to add to your digital pantry! Make sure to delete all 
-    items you no longer have in stock to keep your pantry up to date.</h5>
+    {% include 'navbar.html' %}
 
- <form method="post" action="{{ url_for('history') }}" class="add-form">
-  <input type="text" name="new_item" placeholder="Enter item name (e.g. Banana)" required>
-  <button type="submit" name="add_item">Add Item</button>
-</form>
+    <div class="container main-content">
+        <!-- header -->
+        <div class="page-header">
+            <h1><i class="fas fa-box-open me-3"></i>Your Digital Pantry</h1>
+            <p class="subtitle">Manage and track items currently in your pantry</p>
+        </div>
 
-{% if error and override_item %}
-  <form method="post" action="{{ url_for('history') }}" class="error-override">
-    <p>{{ error|safe }} Choose another name, or:</p>
-    <input type="hidden" name="new_item" value="{{ override_item }}">
-    <input type="hidden" name="force_add" value="1">
-    <button type="submit" name="add_item">Add Anyway</button>
-    <button type="submit">Cancel</button>
-  </form>
-{% elif error %}
-  <div class="error">{{ error|safe }}</div>
-{% endif %}
+        <!-- description -->
+        <div class="info-card">
+            <p class="mb-0">
+                <i class="fas fa-info-circle me-2 text-primary"></i>
+                This page displays items you currently have stocked in your pantry. Use the "Add Item" tool to manually add products, and remember to delete items you no longer have in stock to keep your pantry up to date.
+            </p>
+        </div>
 
+        <!-- add tiem-->
+        <div class="add-item-section">
+            <h4 class="mb-3">
+                <i class="fas fa-plus-circle me-2 text-success"></i>
+                Add New Item
+            </h4>
+            <form method="post" action="{{ url_for('history') }}" class="add-item-form">
+                <input type="text" name="new_item" placeholder="Enter item name (e.g. Banana)" required>
+                <button type="submit" name="add_item" class="btn-add">
+                    <i class="fas fa-plus me-2"></i>Add Item
+                </button>
+            </form>
+        </div>
 
-<form method="get" action="{{ url_for('history') }}" class="filter-form">
-  <label>
-    Category
-    <select
-      name="filter_category"
-      onchange="this.form.submit()"
-    >
-      <option value="">All</option>
-      {% for cat in categories %}
-        <option value="{{ cat }}"
-          {% if filter_category == cat %}selected{% endif %}>
-          {{ cat }}
-        </option>
-      {% endfor %}
-    </select>
-  </label>
+        <!-- ovveride item in cart -->
+        {% if error and override_item %}
+        <div class="error-override">
+            <p>{{ error|safe }} Choose another name, or:</p>
+            <form method="post" action="{{ url_for('history') }}" style="display: inline;">
+                <input type="hidden" name="new_item" value="{{ override_item }}">
+                <input type="hidden" name="force_add" value="1">
+                <button type="submit" name="add_item" class="btn btn-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Add Anyway
+                </button>
+                <button type="submit" class="btn btn-secondary">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+            </form>
+        </div>
+        {% elif error %}
+        <div class="alert error-alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            {{ error|safe }}
+        </div>
+        {% endif %}
 
-  <label>
-    Subcategory
-    <select
-      name="filter_subcategory"
-      onchange="this.form.submit()"
-    >
-      <option value="">All</option>
-      {% for sub in subcategories %}
-        <option value="{{ sub }}"
-          {% if filter_subcategory == sub %}selected{% endif %}>
-          {{ sub }}
-        </option>
-      {% endfor %}
-    </select>
-  </label>
+        <!-- filters -->
+        <div class="filters-section">
+            <h4 class="mb-3">
+                <i class="fas fa-filter me-2 text-primary"></i>
+                Filter & Search Items
+            </h4>
+            <form method="get" action="{{ url_for('history') }}" class="filter-form">
+                <div class="filter-group">
+                    <label for="filter_category">Category</label>
+                    <select name="filter_category" id="filter_category" onchange="this.form.submit()">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if filter_category == cat %}selected{% endif %}>
+                            {{ cat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-  <label>
-    Item Name
-    <input
-      type="text"
-      name="search_term"
-      placeholder="Search item…"
-      value="{{ search_term }}"
-    >
-  </label>
+                <div class="filter-group">
+                    <label for="filter_subcategory">Subcategory</label>
+                    <select name="filter_subcategory" id="filter_subcategory" onchange="this.form.submit()">
+                        <option value="">All Subcategories</option>
+                        {% for sub in subcategories %}
+                        <option value="{{ sub }}" {% if filter_subcategory == sub %}selected{% endif %}>
+                            {{ sub }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-  <a href="{{ url_for('history') }}">Clear Filters</a>
-    {% if purchases %}
-</form>
- {%if show_all%}
-    {%elif not show_all%}
-      <h6>Note: only items in the "grocery" and "other" category are currently displayed, please press see all if you would like to view the remaining categories.</h6>
-    {%endif%}
-  <form method="post" action="{{ url_for('history') }}" style="display:inline-block; margin-bottom:1em;">
-  <button type="submit" name="toggle_all">
-    {{ 'See Groceries' if show_all else 'See All' }}
-  </button>
-</form>
-  <form method="post" action="{{ url_for('history') }}">
-    <table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>Date</th>
-          <th>Item</th>
-          <th>Price</th>
-          <th>Category</th>
-          <th>Subcategory</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for id, name, price, category, subcat, date in purchases %}
-        <tr>
-          <td>
-            <input type="checkbox" name="selected" value="{{ id }}">
-          </td>
-          <td>{{ date }}</td>
-          <td>{{ name }}</td>
-          <td>${{ "%.2f"|format(price) }}</td>
-          <td>{{ category }}</td>
-          <td>{{ subcat }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
+                <div class="filter-group">
+                    <label for="search_term">Search Items</label>
+                    <input type="text" name="search_term" id="search_term" placeholder="Search item name..." value="{{ search_term }}">
+                </div>
 
-    <div class="actions">
-      <button type="submit" name="delete_selected">Delete Selected</button>
-      <button type="submit" name="clear_all" onclick="return confirm('Are you sure your want to clear your purchase history?');">
-        Clear All
-      </button>
+                <div class="filter-group">
+                    <a href="{{ url_for('history') }}" class="clear-filters">
+                        <i class="fas fa-broom me-2"></i>Clear All Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- view button -->
+        {% if purchases %}
+        <div class="toggle-section">
+            {% if not show_all %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Currently showing only "Groceries" category items. Press "See All" to view all categories.
+            </div>
+            {% endif %}
+            
+            <form method="post" action="{{ url_for('history') }}" style="display: inline-block;">
+                <button type="submit" name="toggle_all" class="btn-toggle">
+                    <i class="fas fa-eye me-2"></i>
+                    {{ 'See Groceries Only' if show_all else 'See All Categories' }}
+                </button>
+            </form>
+        </div>
+
+        <!-- table -->
+        <div class="items-table-section">
+            <div class="table-header">
+                <h3>
+                    <i class="fas fa-list me-2"></i>
+                    Pantry Items ({{ purchases|length }} items)
+                </h3>
+            </div>
+            
+            <form method="post" action="{{ url_for('history') }}">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="50">
+                                    <input type="checkbox" id="selectAll" class="form-check-input">
+                                </th>
+                                <th><i class="fas fa-calendar me-2"></i>Date Added</th>
+                                <th><i class="fas fa-shopping-basket me-2"></i>Item Name</th>
+                                <th><i class="fas fa-dollar-sign me-2"></i>Price</th>
+                                <th><i class="fas fa-tags me-2"></i>Category</th>
+                                <th><i class="fas fa-tag me-2"></i>Subcategory</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for id, name, price, category, subcat, date in purchases %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="selected" value="{{ id }}" class="form-check-input item-checkbox">
+                                </td>
+                                <td><small class="text-muted">{{ date }}</small></td>
+                                <td><strong>{{ name }}</strong></td>
+                                <td><span class="badge bg-success">${{ "%.2f"|format(price) }}</span></td>
+                                <td><span class="badge bg-primary">{{ category }}</span></td>
+                                <td><span class="badge bg-secondary">{{ subcat }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-actions">
+                    <button type="submit" name="delete_selected" class="btn btn-danger me-2">
+                        <i class="fas fa-trash me-2"></i>Delete Selected
+                    </button>
+                    <button type="submit" name="clear_all" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to clear your entire purchase history?');">
+                        <i class="fas fa-trash-alt me-2"></i>Clear All Items
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="no-items">
+            <i class="fas fa-box-open"></i>
+            <h4>No Items Found</h4>
+            <p class="text-muted">Your pantry is empty or no items match your current filters.</p>
+        </div>
+        {% endif %}
     </div>
-  </form>
-  {% else %}
-    <p>No purchases found.</p>
-  {% endif %}
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Search input debounce
+            const form = document.querySelector('.filter-form');
+            const input = form.querySelector('input[name="search_term"]');
+            let debounce;
 
-  <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const form       = document.querySelector('.filter-form');
-  const input      = form.querySelector('input[name="search_term"]');
-  let   debounce;
+            
 
-  // On each keystroke, wait 300ms after the last one before submitting:
-  input.addEventListener('input', () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => {
-      form.submit();
-    }, 300);
-  });
+            // Focus and cursor position after reload
+            if (input.value) {
+                input.focus();
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            }
 
-  // After reload, put focus (and cursor at end) back into the input:
-  if (input.value) {
-    input.focus();
-    const len = input.value.length;
-    input.setSelectionRange(len, len);
-  }
-});
-</script>
+            // Select all functionality
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', function() {
+                    itemCheckboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                });
+
+                // Update select all based on individual checkboxes
+                itemCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+                        selectAllCheckbox.checked = checkedBoxes.length === itemCheckboxes.length;
+                        selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < itemCheckboxes.length;
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,70 +1,285 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Financial Summary</title>
-  <link rel="stylesheet" href="/static/css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Analyzer - Financial Summary</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-  <div class="header">
-    <h1>Financial Summary</h1> 
-        <link rel="stylesheet" href="/static/css/styles.css">
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <nav>
-      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
-      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
-      <a class="btn-nav" href="{{ url_for('recipes') }}">Recipes</a>
-      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
-      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
-    </nav>
-  </div>
+       {% include 'navbar.html' %}
 
-  <div class="content">
-    <h2>Your Spending</h2>
-    <p><strong>Current Total (active items):</strong>
-       ${{ "%.2f"|format(current_total) }}</p>
-    <p><strong>All-Time Total (including deleted):</strong>
-       ${{ "%.2f"|format(all_time_total) }}</p>
 
-<div id="chart" style="width:100%;height:600px;"></div>
+    <div class="container main-content">
+        <!-- header -->
+        <div class="page-header">
+            <h1><i class="fas fa-chart-line me-3"></i>Financial Dashboard</h1>
+            <p class="subtitle">Comprehensive analysis of your spending patterns and trends</p>
+        </div>
 
+        <!-- current and all time spending -->
+        <div class="stats-cards">
+            <div class="stat-card current-total">
+                <div class="stat-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-label">Current Pantry Value</div>
+                <p class="stat-value">${{ "%.2f"|format(current_total) }}</p>
+                <div class="stat-description">
+                    Total value of items currently in your pantry
+                </div>
+            </div>
+
+            <div class="stat-card lifetime-total">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-area"></i>
+                </div>
+                <div class="stat-label">All-Time Spending</div>
+                <p class="stat-value">${{ "%.2f"|format(all_time_total) }}</p>
+                <div class="stat-description">
+                    Total amount spent including deleted items
+                </div>
+            </div>
+        </div>
+
+        <!-- the chart -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <div>
+                    <h2>
+                        <i class="fas fa-chart-line me-2"></i>
+                        Spending Trends Over Time
+                    </h2>
+                </div>
+                <div class="chart-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Interactive chart showing cumulative spending
+                </div>
+            </div>
+
+            <div id="chart" class="plotly-chart"></div>
+        </div>
+
+        <!-- facts at the bottom -->
+        <div class="insights-section">
+            <div class="insights-header">
+                <i class="fas fa-lightbulb"></i>
+                <h3>Financial Insights</h3>
+            </div>
+
+            <div class="insight-item">
+                <h5><i class="fas fa-trending-up me-2 text-success"></i>Spending Overview</h5>
+                <p>
+                    {% if current_total > 0 %}
+                        You currently have ${{ "%.2f"|format(current_total) }} worth of items in your pantry. 
+                        {% if all_time_total > current_total %}
+                            You've spent an additional ${{ "%.2f"|format(all_time_total - current_total) }} on items that have been consumed or removed.
+                        {% endif %}
+                    {% else %}
+                        Your pantry is currently empty. Start scanning receipts to track your purchases!
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="insight-item">
+                <h5><i class="fas fa-chart-pie me-2 text-info"></i>Usage Efficiency</h5>
+                <p>
+                    {% if all_time_total > 0 %}
+                        {% set efficiency = (current_total / all_time_total * 100) %}
+                        {{ "%.1f"|format(efficiency) }}% of your total spending is still available in your pantry. 
+                        {% if efficiency > 70 %}
+                            Great job maintaining your inventory!
+                        {% elif efficiency > 40 %}
+                            You're doing well at managing your pantry items.
+                        {% else %}
+                            Consider reviewing which items you use most frequently.
+                        {% endif %}
+                    {% else %}
+                        Start tracking your purchases to see efficiency insights here.
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="insight-item">
+                <h5><i class="fas fa-calendar-alt me-2 text-warning"></i>Tracking Progress</h5>
+                <p>
+                    {% if x_vals and y_vals %}
+                        You have {{ x_vals|length }} recorded transactions in your spending history. 
+                        Regular receipt scanning helps you better understand your spending patterns and make informed financial decisions.
+                    {% else %}
+                        No transaction data available yet. Upload some receipts to start building your financial timeline!
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- data for chary -->
     <script id="plot-data" type="application/json">
-  {
-    "x": {{ x_vals | tojson | safe }},
-    "y": {{ y_vals | tojson | safe }}
-  }
-</script>
+        {
+            "x": {{ x_vals | tojson | safe }},
+            "y": {{ y_vals | tojson | safe }}
+        }
+    </script>
 
-<script>
-  const rawData = JSON.parse(document.getElementById('plot-data').textContent);
-  const trace = {
-    x: rawData.x,
-    y: rawData.y,
-    mode: 'lines+markers',
-    type: 'scatter'
-  };
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get chart data
+            const rawData = JSON.parse(document.getElementById('plot-data').textContent);
+            
+            // Check if we have data
+            if (rawData.x && rawData.x.length > 0 && rawData.y && rawData.y.length > 0) {
+                // Create the trace
+                const trace = {
+                    x: rawData.x,
+                    y: rawData.y,
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    name: 'Cumulative Spending',
+                    line: {
+                        color: '#3498db',
+                        width: 3,
+                        shape: 'spline'
+                    },
+                    marker: {
+                        color: '#2c3e50',
+                        size: 8,
+                        symbol: 'circle'
+                    },
+                    fill: 'tonexty',
+                    fillcolor: 'rgba(52, 152, 219, 0.1)'
+                };
 
-  const layout = {
-    title: 'Cumulative Spending Over Time',
-    xaxis: {
-      title: 'Date',
-      type: 'date',
-      rangeselector: {
-        buttons: [
-          {count: 12, label: '12h', step: 'hour', stepmode: 'backward'},
-          {count: 1, label: '1d', step: 'day', stepmode: 'backward'},
-          {count: 7, label: '1w', step: 'day', stepmode: 'backward'},
-          {count: 1, label: '1m', step: 'month', stepmode: 'backward'},
-          {count: 1, label: '1y', step: 'year', stepmode: 'backward'},
-          {step: 'all'}
-        ]
-      },
-      rangeslider: { visible: true }
-    },
-    yaxis: { title: 'Total Spent ($)' }
-  };
+                // Chart layout
+                const layout = {
+                    title: 'Cumulative Spending Over Time',
+                    xaxis: {
+                        title: 'Date',
+                        type: 'date',
+                        gridcolor: '#e9ecef',
+                        linecolor: '#dee2e6',
+                        tickfont: { color: '#6c757d' },
+                        rangeselector: {
+                            buttons: [
+                                {count: 12, label: '12h', step: 'hour', stepmode: 'backward'},
+                                {count: 1, label: '1d', step: 'day', stepmode: 'backward'},
+                                {count: 7, label: '1w', step: 'day', stepmode: 'backward'},
+                                {count: 1, label: '1m', step: 'month', stepmode: 'backward'},
+                                {count: 1, label: '1y', step: 'year', stepmode: 'backward'},
+                                {step: 'all'}
+                            ],
+                            bgcolor: '#f8f9fa',
+                            bordercolor: '#dee2e6',
+                            activecolor: '#3498db'
+                        },
+                        rangeslider: { 
+                            visible: true,
+                            bgcolor: '#f8f9fa',
+                            bordercolor: '#dee2e6'
+                        }
+                    },
+                    yaxis: {
+                        title: 'Total Spent ($)',
+                        gridcolor: '#e9ecef',
+                        linecolor: '#dee2e6',
+                        tickfont: { color: '#6c757d' },
+                        tickprefix: '$'
+                    },
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    font: {
+                        family: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                        size: 12,
+                        color: '#6c757d'
+                    },
+                    margin: {
+                        l: 60,
+                        r: 40,
+                        t: 60,
+                        b: 60
+                    },
+                    hovermode: 'x unified',
+                    showlegend: false
+                };
 
-  Plotly.newPlot('chart', [trace], layout, {responsive: true});
-</script>
-  </div>
+                // Chart configuration
+                const config = {
+                    responsive: true,
+                    displayModeBar: true,
+                    modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
+                    displaylogo: false,
+                    toImageButtonOptions: {
+                        format: 'png',
+                        filename: 'spending_chart',
+                        height: 600,
+                        width: 1000,
+                        scale: 1
+                    }
+                };
+
+                // Create the plot
+                Plotly.newPlot('chart', [trace], layout, config);
+            } else {
+                // Show placeholder for no data
+                document.getElementById('chart').innerHTML = `
+                    <div class="loading-placeholder">
+                        <i class="fas fa-chart-line"></i>
+                        <h4>No Data Available</h4>
+                        <p>Upload some receipts to start tracking your spending trends!</p>
+                    </div>
+                `;
+            }
+
+            // Animate stat cards on load
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 200);
+            });
+
+            // Counter animation for stat values
+            function animateValue(element, start, end, duration) {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    const current = progress * (end - start) + start;
+                    element.textContent = '$' + current.toFixed(2);
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            }
+
+            // Animate stat values after cards are visible
+            setTimeout(() => {
+                const currentTotalElement = document.querySelector('.current-total .stat-value');
+                const lifetimeTotalElement = document.querySelector('.lifetime-total .stat-value');
+                
+                if (currentTotalElement) {
+                    const currentValue = parseFloat(currentTotalElement.textContent.replace('$', ''));
+                    currentTotalElement.textContent = '$0.00';
+                    animateValue(currentTotalElement, 0, currentValue, 1500);
+                }
+                
+                if (lifetimeTotalElement) {
+                    const lifetimeValue = parseFloat(lifetimeTotalElement.textContent.replace('$', ''));
+                    lifetimeTotalElement.textContent = '$0.00';
+                    animateValue(lifetimeTotalElement, 0, lifetimeValue, 2000);
+                }
+            }, 800);
+        });
+    </script>
 </body>
 </html>

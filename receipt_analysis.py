@@ -37,7 +37,6 @@ def plot_pie_chart(data):
 
     plt.figure(figsize=(7, 7))
     plt.pie(values, labels=labels, autopct='%1.1f%%', colors=plt.cm.Pastel2.colors)
-    plt.title('Spending Breakdown by Category')
     plt.axis('equal')
     plt.tight_layout()
     
@@ -252,16 +251,17 @@ def analyze_receipt(input_file_name, uid):
     original_items = items_for_db.copy()
     #check if all rows outputted
     if len(clean_names) != len(original_items):
-        error = f"Sorry an error happened. Missing some rows: {len(clean_names)} outputted vs {len(original_items)} originals"
+        error = f"Sorry, we tooted. Missing some items: {len(clean_names)} found vs {len(original_items)} in the receipt"
     items_for_db = [
         (clean_name, price, category, subcategory)
         for ( _ , price, category, subcategory), clean_name
         in zip(original_items, clean_names)
     ]
     #put into first table
+    cleaned = sum(price for (name, price, cat, sub) in items_for_db)
     cur.execute(
         "INSERT INTO receipt (uid, total_spend, image_path) VALUES (?, ?, ?)",
-        (uid, finalCost, image_path)
+        (uid, cleaned, image_path)
     )
     rid = cur.lastrowid
     #second table

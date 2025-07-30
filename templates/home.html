@@ -1,79 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Receipt Analyzer</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Analyzer - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <div class="header">
-        <h1>Receipt Analyzer</h1>
-        <nav>
-      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
-      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
-      <a class="btn-nav" href="{{ url_for('recipes') }}">Recipes</a>
-      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
-      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
-    </nav>
-    </div>
-    
-    <div class="supported-formats">
-        <h3>Supported File Formats:</h3>
-        <p>PDF, JPEG, JPG, PNG</p>
-        <p><strong>Note:</strong> File size should be less than 50MB</p>
-    </div>
-    
-    <form method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label for="receipt">Select Receipt Image:</label>
-            <input type="file" id="receipt" name="receipt" accept="image/*,.pdf" required>
+    {% include 'navbar.html' %}
+
+    <div class="container main-content">
+{% if error %}
+<div class="error-card">
+    <div class="card-body">
+            <h4 class="error-title">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error Processing Receipt
+            </h4>
+                <p class="mb-0">{{ error }}</p>
+            </div>
         </div>
-        <button type="submit">Analyze Receipt</button>
-    </form>
-
-    {% if error %}
-    <div class="error">
-        <h3>Error:</h3>
-        <p>{{ error }}</p>
-    </div>
-    {% endif %}
-    {% if broken %}
-    <div class="error">
-        <h3>Error:</h3>
-        <p>{{ broken }}</p>
-    </div>
-    {% endif %}
-
-    {% if table_data %}
-    <h2>Results:</h2>
-    <table>
-        <thead>
-        <tr>
-            <th>Item</th>
-            <th>Price</th>
-            <th>Category</th>
-            <th>Subcategory</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for name, price, category, subcategory in table_data %}
-            <tr>
-            <td>{{ name }}</td>
-            <td>${{ "%.2f"|format(price) }}</td>
-            <td>{{ category }}</td>
-            <td>{{ subcategory }}</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
-    {% if total_cost and total_cost > 0 %}
-        <div class="total">
-            <h3>Total Spent: ${{ "%.2f"|format(total_cost) }}</h3>
+            {% endif %}
+            {% if broken %}
+        <div class="error-card">
+            <div class="card-body">
+                <h4 class="error-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Processing Error
+                </h4>
+                <p class="mb-0">{{ broken }}</p>
+            </div>
         </div>
     {% endif %}
 
-    {% if image_path %}
-    <img src="{{ image_path }}" alt="Pie Chart">
-    {% endif %}
+        <!-- uploads -->
+        <div class="upload-section">
+            <div class="upload-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <h1 class="upload-title">Upload Your Receipt</h1>
+            <p class="upload-subtitle">Analyze your purchases and track your spending with ease</p>
+
+            <div class="supported-formats">
+                <h5><i class="fas fa-info-circle me-2"></i>Supported File Formats</h5>
+                <p class="mb-2"><strong>File Types:</strong> PDF, JPEG, JPG, PNG</p>
+                <p class="mb-0"><strong>Maximum Size:</strong> 50MB</p>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                <div class="file-input-wrapper">
+                    <input type="file" id="receipt" name="receipt" accept="image/*,.pdf" required class="file-input">
+                    <label for="receipt" class="file-input-label" id="fileLabel">
+                        <i class="fas fa-upload me-2"></i>
+                        Choose Receipt File
+                    </label>
+                </div>
+
+                <div>
+                    <button type="submit" class="analyze-btn" id="analyzeBtn">
+                        <i class="fas fa-search me-2"></i>
+                        Analyze Receipt
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- results -->
+        {% if table_data %}
+        <div class="results-card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-list-alt me-2"></i>
+                    Receipt Analysis Results
+                </h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover results-table">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-shopping-basket me-2"></i>Item</th>
+                            <th><i class="fas fa-dollar-sign me-2"></i>Price</th>
+                            <th><i class="fas fa-tags me-2"></i>Category</th>
+                            <th><i class="fas fa-tag me-2"></i>Subcategory</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, price, category, subcategory in table_data %}
+                        <tr>
+                            <td><strong>{{ name }}</strong></td>
+                            <td><span class="badge bg-success fs-6">${{ "%.2f"|format(price) }}</span></td>
+                            <td><span class="badge bg-primary">{{ category }}</span></td>
+                            <td><span class="badge bg-secondary">{{ subcategory }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- total cost -->
+        {% if total_cost and total_cost > 0 %}
+        <div class="total-section">
+            <h4><i class="fas fa-calculator me-2"></i>Total Amount Spent</h4>
+            <p class="total-amount">${{ "%.2f"|format(total_cost) }}</p>
+        </div>
+        {% endif %}
+
+        <!-- image -->
+        {% if image_path %}
+        <div class="chart-container">
+            <div class="results-card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Spending Breakdown
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ image_path }}" alt="Spending Breakdown Chart" class="img-fluid">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // File input handling
+        const fileInput = document.getElementById('receipt');
+        const fileLabel = document.getElementById('fileLabel');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const uploadForm = document.getElementById('uploadForm');
+
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const fileName = this.files[0].name;
+                fileLabel.innerHTML = `<i class="fas fa-file me-2"></i>${fileName}`;
+                fileLabel.style.background = 'linear-gradient(45deg, var(--success-color), #2ecc71)';
+            }
+        });
+
+        // Drag and drop
+        fileLabel.addEventListener('dragover', e => {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+        fileLabel.addEventListener('dragleave', e => {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+        fileLabel.addEventListener('drop', e => {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+                const fileName = files[0].name;
+                this.innerHTML = `<i class="fas fa-file me-2"></i>${fileName}`;
+                this.style.background = 'linear-gradient(45deg, var(--success-color), #2ecc71)';
+            }
+        });
+
+        // Only the spinning cog now
+        uploadForm.addEventListener('submit', function() {
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = `
+                <i class="fas fa-cog fa-spin me-2"></i>
+                Processing...
+            `;
+        });
+
+        // Smooth scroll
+        {% if table_data %}
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsCard = document.querySelector('.results-card');
+            if (resultsCard) resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        {% endif %}
+    </script>
 </body>
 </html>

@@ -32,7 +32,7 @@ def login():
 
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT uid, fname, lname FROM User WHERE email = ? AND password = ?", (email, password))
+        cur.execute("SELECT uid, fname, lname, email FROM User WHERE email = ? AND password = ?", (email, password))
         user = cur.fetchone()
         conn.close()
 
@@ -40,6 +40,7 @@ def login():
             session["uid"] = user[0]
             session["fname"] = user[1]
             session["lname"] = user[2]
+            session["email"] = user[3]
             return redirect(url_for("home"))
         else:
             check = "Invalid email or password."
@@ -109,6 +110,62 @@ def home():
             total_cost = sum(item[1] for item in result)
 
     return render_template("home.html", table_data=result, image_path=image_path,total_cost=total_cost, error=error, broken=broken)
+
+@app.route("/edit", methods=["GET", "POST"])
+def edit_info():
+    if 'uid' not in session:
+        return redirect(url_for('login'))
+
+    error = None
+    if request.method == "POST":
+        #get form data
+        fname = request.form.get("firstName", "").strip()
+        lname = request.form.get("lastName", "").strip()
+        email = request.form.get("email", "").strip()
+        old_pw = request.form.get("oldPassword", "")
+        new_pw = request.form.get("newPassword", "")
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        #get info
+        cur.execute("SELECT email, password FROM User WHERE uid = ?", (session["uid"],))
+        current_user = cur.fetchone()
+        current_email, current_password = current_user
+        
+        #check if changing email
+        if email != current_email:
+            cur.execute("SELECT uid FROM User WHERE email = ? AND uid != ?", (email, session["uid"]))
+            if cur.fetchone():
+                error = "Email is already registered..."
+                conn.close()
+                return render_template("edit.html", error=error)
+        
+        #password change
+        if new_pw:
+            if not old_pw:
+                error = "You obvioulsy need the current password to set a new one!"
+            elif old_pw != current_password:
+                error = "WRONG PASSWORD!"
+            else:
+                # Update with new password
+                cur.execute("""UPDATE User SET fname = ?, lname = ?, email = ?, password = ? WHERE uid = ?""", (fname, lname, email, new_pw, session["uid"]))
+        else:
+            #dont change pword
+            cur.execute("""UPDATE User SET fname = ?, lname = ?, email = ? WHERE uid = ?""", (fname, lname, email, session["uid"]))
+        
+        if not error:
+            conn.commit()
+            conn.close()
+            #update info
+            session["fname"] = fname
+            session["lname"] = lname
+            session["email"] = email
+            return redirect(url_for("home"))
+        
+        conn.close()
+
+    return render_template("edit.html", error=error)
 
 #see all items bought page/control delete
 @app.route("/history", methods=["GET", "POST"])
@@ -185,7 +242,7 @@ def history():
     params = [uid]
 
     if not show_all:
-        uidis.append("d.category IN ('Groceries', 'Other')")
+        uidis.append("d.category IN ('Groceries')")
 
     if category:
         uidis.append("d.category = ?")
@@ -237,6 +294,9 @@ def financial():
         dates.append(date.isoformat())
         running += float(amt)
         sums.append(running)
+    if dates and sums:
+        dates.insert(0, dates[0])
+        sums.insert(0, 0.0)
 
     return render_template("financial.html", current_total=current_total, all_time_total=total, x_vals=dates, y_vals=sums)
 

@@ -1,145 +1,199 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Recipe Recommendations</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Analyzer - Recipe Recommendations</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
 </head>
 <body>
-  <div class="header">
-    <h1>Recipe Recommendations</h1>
-    <nav>
-      <a class="btn-nav" href="{{ url_for('home') }}">Home</a>
-      <a class="btn-nav" href="{{ url_for('history') }}">Current Pantry</a>
-      <a class="btn-nav" href="{{ url_for('recipes') }}">Recipes</a>
-      <a class="btn-nav" href="{{ url_for('financial') }}">Financial Data</a>
-      <a class="btn-signout" href="{{ url_for('logout') }}">Sign Out</a>
-    </nav>
-  </div>
+       {% include 'navbar.html' %}
 
-  <div class="content">
-    <p>
-      This page will auto-generate a recipe for you based on
-      the items currently in your pantry. Choose your preferred
-      method to get started.
-      </p>
-<p>
-      Use only Items in Pantry: Will generate a recipe strictly with the items actively in your pantry and a few expected basic ingredients.
-      </p>
-        <p>
-      Get Creative: Will generate a recipe that is widely known and appreciated with or without items actively in your pantry.
-    
-    </p>
 
-    <div class="recipe-buttons">
-      <form method="post" action="{{ url_for('recipes') }}">
-        <div class="form-group" style="margin-bottom:12px;">
-          <label for="srequest">
-            Special requests (e.g., dietary restrictions, cuisine style):
-          </label>
-          <textarea
-            id="srequest"
-            name="srequest"
-            class="form-control"
-            rows="2"
-          >{{ srequest }}</textarea>
+    <div class="container main-content">
+        <!-- header -->
+        <div class="page-header">
+            <h1><i class="fas fa-utensils me-3"></i>Recipe Recommendations</h1>
+            <p class="subtitle">AI-powered recipe suggestions based on your pantry items</p>
         </div>
 
-        <button
-          type="submit"
-          name="difficulty"
-          value="easy"
-          class="btn-primary"
-        >
-          Use only Items in Pantry
-        </button>
-        <button
-          type="submit"
-          name="difficulty"
-          value="hard"
-          class="btn-secondary"
-        >
-          Get Creative
-        </button>
-      </form>
+        <!-- descriptions -->
+        <div class="info-section">
+            <h4 class="mb-3">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                How It Works
+            </h4>
+            <p class="mb-3">This page will auto-generate personalized recipes based on the items currently in your pantry. Choose your preferred cooking style to get started:</p>
+            
+            <div class="recipe-option">
+                <h5><i class="fas fa-box me-2 text-success"></i>Use Only Pantry Items</h5>
+                <p class="mb-0">Generates recipes strictly using items from your current pantry plus basic cooking ingredients you're likely to have.</p>
+            </div>
+            
+            <div class="recipe-option">
+                <h5><i class="fas fa-magic me-2 text-warning"></i>Get Creative</h5>
+                <p class="mb-0">Generates popular, well-known recipes that may include additional ingredients beyond your current pantry items.</p>
+            </div>
+        </div>
+
+        <!-- generate recipe -->
+        <div class="recipe-form-section">
+            <h4 class="mb-3">
+                <i class="fas fa-cog me-2 text-primary"></i>
+                Generate Your Recipe
+            </h4>
+            
+            <form method="post" action="{{ url_for('recipes') }}">
+                <div class="special-requests">
+                    <label for="srequest">
+                        <i class="fas fa-edit me-2"></i>
+                        Special Requests
+                    </label>
+                    <textarea id="srequest" name="srequest" class="form-control" rows="3" placeholder="Enter any dietary restrictions, cuisine preferences, or special requests (e.g., vegetarian, gluten-free, Italian cuisine, etc.)">{{ srequest }}</textarea>
+                </div>
+
+                <div class="recipe-buttons">
+                    <button type="submit" name="difficulty" value="easy" class="btn-pantry">
+                        <i class="fas fa-box mb-2" style="display: block; font-size: 1.5rem;"></i>
+                        Use Only Pantry Items
+                    </button>
+                    <button type="submit" name="difficulty" value="hard" class="btn-creative">
+                        <i class="fas fa-magic mb-2" style="display: block; font-size: 1.5rem;"></i>
+                        Get Creative
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <ul class="flashes">
+                {% for category, msg in messages %}
+                <li class="flash-{{ category }}">
+                    <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }} me-2"></i>
+                    {{ msg }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        {% endwith %}
+
+        <!-- display recipe -->
+        {% if recipe %}
+        <div class="recipe-container">
+            <h2>
+                <i class="fas fa-utensils me-2"></i>
+                Your Generated Recipe
+            </h2>
+            
+           <div class="recipe-content" style="white-space: pre-wrap; word-wrap: break-word;">
+                {{ recipe }}
+            </div>
+
+            <form method="post" action="{{ url_for('recipes') }}" class="save-recipe-form">
+                <input type="hidden" name="action" value="save">
+                <input type="hidden" name="recipe_data" value="{{ recipe|e }}">
+
+                <label for="recipe_name">
+                    <i class="fas fa-tag me-2"></i>
+                    Recipe Name
+                </label>
+                <input type="text" id="recipe_name" name="recipe_name" required class="form-control" value="{{ recipe.split('\n')[0] }}">
+
+                <button type="submit" class="btn-save">
+                    <i class="fas fa-save me-2"></i>
+                    Save Recipe
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- saved recipes -->
+        <div class="saved-recipes-section">
+            <button id="toggle-saved" class="btn-toggle-saved">
+                <i class="fas fa-bookmark me-2"></i>
+                Show Saved Recipes
+            </button>
+            
+            <div id="saved-recipes" class="saved-recipes-list">
+                {% if saved_recipes %}
+                    {% for r in saved_recipes %}
+                    <div class="saved-recipe-item">
+                        <div class="recipe-info">
+                            <h5>{{ r[1] }}</h5>
+                            <div class="recipe-date">Saved on {{ r[2] }}</div>
+                        </div>
+                        <div class="recipe-actions">
+                            <a href="{{ url_for('view_saved', recipe_id=r[0]) }}" class="btn-view">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <form method="post" action="{{ url_for('recipes') }}" style="display: inline;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="recipe_id" value="{{ r[0] }}">
+                                <button type="submit" class="btn-delete-small" onclick="return confirm('Are you sure you want to delete this recipe?');">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="no-recipes">
+                    <i class="fas fa-bookmark" style="font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem;"></i>
+                    No saved recipes yet. Generate and save your first recipe above!
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-          {% for category, msg in messages %}
-            <li class="flash-{{ category }}">{{ msg }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle saved recipes
+            const toggleBtn = document.getElementById('toggle-saved');
+            const savedRecipes = document.getElementById('saved-recipes');
 
-    {# ——— Only show this block when we have a freshly generated recipe ——— #}
-    {% if recipe %}
-      <div class="recipe-container">
-        <h2>Your Generated Recipe</h2>
-        {{ recipe|safe }}
+            if (toggleBtn && savedRecipes) {
+                toggleBtn.addEventListener('click', function() {
+                    if (savedRecipes.classList.contains('show')) {
+                        savedRecipes.classList.remove('show');
+                        this.innerHTML = '<i class="fas fa-bookmark me-2"></i>Show Saved Recipes';
+                    } else {
+                        savedRecipes.classList.add('show');
+                        this.innerHTML = '<i class="fas fa-bookmark me-2"></i>Hide Saved Recipes';
+                    }
+                });
+            }
 
-        <form method="post" action="{{ url_for('recipes') }}">
-          <input type="hidden" name="action" value="save">
-          <input type="hidden" name="recipe_data" value="{{ recipe|e }}">
+            // Smooth scroll to generated recipe
+            {% if recipe %}
+            const recipeContainer = document.querySelector('.recipe-container');
+            if (recipeContainer) {
+                recipeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            {% endif %}
 
-          <div class="form-group" style="margin-bottom:12px;">
-            <label for="recipe_name">Recipe Name:</label>
-            <input
-              type="text"
-              id="recipe_name"
-              name="recipe_name"
-              required
-              class="form-control"
-              value="{{ recipe.split('\n')[0] }}"
-            >
-          </div>
-
-          <button type="submit" class="btn-primary">Save Recipe</button>
-        </form>
-      </div>
-    {% endif %}
-
-
-    {# ——— Saved recipes are entirely separate and never reference `recipe` ——— #}
-    <button id="toggle-saved" class="btn-secondary" style="margin-top:20px;">
-      Show Saved Recipes
-    </button>
-    <div id="saved-recipes" style="display:none; margin-top:10px;">
-      {% if saved_recipes %}
-        <ul>
-          {% for r in saved_recipes %}
-            <li>
-              <strong>{{ r[1] }}</strong> ({{ r[2] }})
-              <a href="{{ url_for('view_saved', recipe_id=r[0]) }}" style="margin-left:10px;">
-                View
-              </a>
-              <form method="post" action="{{ url_for('recipes') }}" style="display:inline; margin-left:10px;">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="recipe_id" value="{{ r[0] }}">
-                <button type="submit" class="btn-secondary">Delete</button>
-              </form>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p><em>No saved recipes yet.</em></p>
-      {% endif %}
-    </div>
-
-  </div>
-
-  <script>
-    document.getElementById('toggle-saved').addEventListener('click', function() {
-      var div = document.getElementById('saved-recipes');
-      if (div.style.display === 'none') {
-        div.style.display = 'block';
-        this.textContent = 'Hide Saved Recipes';
-      } else {
-        div.style.display = 'none';
-        this.textContent = 'Show Saved Recipes';
-      }
-    });
-  </script>
+            // Form submission loading states
+            const recipeForm = document.querySelector('.recipe-form-section form');
+            if (recipeForm) {
+                recipeForm.addEventListener('submit', function(e) {
+                    const btn = e.submitter; // the button that triggered submit
+                    if (btn && (btn.classList.contains('btn-pantry') || btn.classList.contains('btn-creative'))) {
+                        const originalHTML = btn.innerHTML;
+                        btn.disabled = true;
+                        btn.innerHTML = `
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            <span class="ms-2">Generating Recipe...</span>
+                        `;
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>
