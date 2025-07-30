@@ -343,12 +343,12 @@ def recipe(pantry_items, difficulty, srequest=""):
         Create recipes that require basic to average cooking skills, use common techniques, and have clear step-by-step instructions.
         Focus on recipes that can be completed in one hour or less with basic kitchen equipment.
         You will be provided a list of items, use those to come up with your recipe and assume they only have extra basic condiments and seasonings. 
-        IMPORTANT: You do not have to use all of the ingredients, only use the ones that make sense.
-        IMPORTANT Pt2: If you cannot come up with any appetizing recipe from those ingredients simply say: 'Sorry, I could not make a recipe using only those ingredients. Try adding more and try again!' """
+        IMPORTANT: You do not have to use all of the ingredients, only use the ones that make sense. Also adhere to all special requests as best you can.
+        CRITICAL: If you cannot come up with any appetizing recipe that is normal for most people from those ingredients provided simply say: 'Sorry, I could not make a recipe using only those ingredients. Try adding more and try again!' """
     else:
         system_prompt = """You are a professional chef who creates delicious but relatively simple meals. 
-        You will be provided a list of panty items, ignore them and come up with the best tasting dish possible.
-        Be creative and come up with a classic and well known dish that anyone and everyone would like. Use the ingredients provided.. or dont."""
+        You will be provided a list of panty items, ignore them and come up with the best tasting dish possible, adhere to all special requests as best you can.
+        Be creative and come up with a classic and well known dish that anyone and everyone would like."""
 
     if pantry_items:
         pantry_list = ", ".join(pantry_items)  
