@@ -63,7 +63,7 @@ SmartPantry AI is a full-stack Flask-based web application that leverages Azure 
    git clone https://github.com/dandob1/SmartPantry_AI.git
    ```
    ```bash
-   cd Receipt_Analyzer
+   cd SmartPantry_AI
    ```
 2. **Install dependencies:**
    ```bash
