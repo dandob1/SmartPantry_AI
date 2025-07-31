@@ -29,7 +29,7 @@ Receipt Analyzer is a full-stack Flask-based web application that leverages Azur
 ### 2. Pantry Management
   - Track items currently in stock.
   - Add items manually and classify them with AI-powered duplicate detection and categorization.
-  - Delete, Search and filter items by category, subcategory, and keywords.
+  - Delete, search, and filter items by category, subcategory, and keywords.
 ### 3. Financial Dashboard
   - View current pantry value and all-time spending.
   - Explore spending trends over time with interactive charts.
@@ -45,7 +45,7 @@ Receipt Analyzer is a full-stack Flask-based web application that leverages Azur
 
 ---
 
-## Technology Stack:
+## Technology Stack
 - Backend: Flask (Python)
 - Database: SQLite3
 - AI Services:
@@ -56,31 +56,37 @@ Receipt Analyzer is a full-stack Flask-based web application that leverages Azur
 
 ---
 
-## Usage:
+## Usage
 1. **Clone into the repository:**
    ```bash
    git clone https://github.com/dandob1/Receipt_Analyzer.git
+   ```
+   ```bash
    cd Receipt_Analyzer
+   ```
 2. **Install dependencies:**
    ```bash
    pip install flask python-dotenv matplotlib pillow azure-ai-documentintelligence openai python-magic-bin
-4. **Initialize the database:**
+   ```
+3. **Initialize the database:**
    ```bash
    python init_db.py
+   ```
 4. **Run the app:**
    ```bash
    python app.py
+   ```
 5. **Visit:**
     - http://localhost:8081
 6. **Sign up as a new user**
 7. **Upload Receipts:**
-    - There are provided receipts in the "uploads" folder
-8. **Manage your local pantry/generate a receipt**
+    - Sample receipts are provided in the `\uploads` folder.
+8. **Manage your local pantry/generate recipes**
 9. **View your financial trends over time**
 
 ---
 
-## AI Capabilities:
+## AI Capabilities
 - **Receipt Item Extraction** – Extract items and prices from uploaded receipts using Azure Document Intelligence.  
 - **Data Cleaning & Normalization** – Normalize messy OCR text into human-friendly product names.  
   > _Example_: `"ORGANIC RND YELLOW TORT. CHIPS"` → `"Organic Yellow Tortilla Chips"`
@@ -91,3 +97,16 @@ Receipt Analyzer is a full-stack Flask-based web application that leverages Azur
   > _Example_: entering `"granny smith apple"` warns about adding `"green apple"`.  
 - **Recipe Generation & Personalization** – Generate recipes using pantry contents and optional dietary or cuisine requests.  
 - **Spending Insights** – Enable detailed spending analytics by classifying expenses and producing category-based trends.
+
+## Screenshots
+### Upload Receipt and Generate Recipe
+<p float="left">
+  <img src="Input/receipt_analysis.png" alt="Receipt Upload Page" width="400" />
+  <img src="Input/recipe.png" alt="Example Recipe" width="400" />
+</p>
+
+### Financial Data and Insights
+<p float="left">
+  <img src="Input/finances.png" alt="Financial Data" width="400" />
+  <img src="Input/insights.png" alt="Financial Insights" width="400" />
+</p>
