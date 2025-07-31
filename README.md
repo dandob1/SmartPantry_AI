@@ -12,6 +12,7 @@ With this tool, you can easily generate recipe ideas using photos of your recent
 - [Technology Stack](#technology-stack)
 - [Usage](#usage)
 - [AI Capabilities](#ai-capabilities)
+- [Screenshots](#screenshots)
 
 ---
 
