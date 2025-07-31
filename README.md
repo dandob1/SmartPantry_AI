@@ -1,4 +1,4 @@
-# Receipt Analyzer
+# SmartPantry AI
 > **Are you a college student with limited cooking experience?**
 > **Do you often have leftover ingredients sitting in your kitchen?**
 
@@ -17,7 +17,7 @@ With this tool, you can easily generate recipe ideas using photos of your recent
 ---
 
 ## Overview
-Receipt Analyzer is a full-stack Flask-based web application that leverages Azure AI Document Intelligence, OpenAI GPT models, and data visualization tools to extract, classify, and analyze data from receipts. Users can upload receipts in various formats (PDF, JPEG, PNG, JPG), and the application automatically extracts data, categorizes spending, and generates personalized recipe recommendations based on items currently in their digital "pantry". A built-in financial tracker visualizes spending trends over time and provides intuitive insights to help users better understand and manage their expenses.
+SmartPantry AI is a full-stack Flask-based web application that leverages Azure AI Document Intelligence, OpenAI GPT models, and data visualization tools to extract, classify, and analyze data from receipts. Users can upload receipts in various formats (PDF, JPEG, PNG, JPG), and the application automatically extracts data, categorizes spending, and generates personalized recipe recommendations based on items currently in their digital "pantry". A built-in financial tracker visualizes spending trends over time and provides intuitive insights to help users better understand and manage their expenses.
 
 ---
 
@@ -60,7 +60,7 @@ Receipt Analyzer is a full-stack Flask-based web application that leverages Azur
 ## Usage
 1. **Clone into the repository:**
    ```bash
-   git clone https://github.com/dandob1/Receipt_Analyzer.git
+   git clone https://github.com/dandob1/SmartPantry_AI.git
    ```
    ```bash
    cd Receipt_Analyzer
