@@ -54,14 +54,14 @@ def analyze_receipt(input_file_name, uid):
 
     # Instantiating the OpenAI client
     openai_client = AzureOpenAI(
-        azure_endpoint="https://aisdevelopment.openai.azure.com/",
-            api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
-            api_version="2024-12-01-preview",
-        )
+        api_version="2024-12-01-preview",
+        azure_endpoint="https://pprojects.openai.azure.com/",
+        api_key="60k6pEridppQUi1HWnrw031CKwrpjB4EIFm9EeFVdp1BFdZTo5v1JQQJ99BJACYeBjFXJ3w3AAABACOG0e1A",
+    )
     #receipt reader client
     document_intelligence_client = DocumentIntelligenceClient(
-        endpoint="https://testreadreciept.cognitiveservices.azure.com/",
-        credential=AzureKeyCredential("39iwdH3cbVrTiGFLksknxzvPZDP2qBD6E5QQ97HgsyKg19ou4odPJQQJ99BFACYeBjFXJ3w3AAALACOGgR2Z")
+        endpoint="https://receiptreaderpp.cognitiveservices.azure.com/",
+        credential=AzureKeyCredential("DWxHgv6diKEFUsYS2vyYt0V8C696GwByccLIMW5NPj159zKuccbVJQQJ99BJACYeBjFXJ3w3AAALACOGWVPF")
     )
     #open image
     with open(input_file_name, 'rb') as image_file:
@@ -279,10 +279,10 @@ def analyze_receipt(input_file_name, uid):
 #ai that will classify individual items added
 def classify_item(name: str, existing_items: list[str]):
     client = AzureOpenAI(
-        azure_endpoint="https://aisdevelopment.openai.azure.com/",
-            api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
-            api_version="2024-12-01-preview",
-        )
+        api_version="2024-12-01-preview",
+        azure_endpoint="https://pprojects.openai.azure.com/",
+        api_key="60k6pEridppQUi1HWnrw031CKwrpjB4EIFm9EeFVdp1BFdZTo5v1JQQJ99BJACYeBjFXJ3w3AAABACOG0e1A",
+    )
     #provide system prompt, same as before
     system = {
         "role": "system",
@@ -332,9 +332,9 @@ def classify_item(name: str, existing_items: list[str]):
     
 def recipe(pantry_items, difficulty, srequest=""):
     client = AzureOpenAI(
-        azure_endpoint="https://aisdevelopment.openai.azure.com/",
-        api_key="DTyQG79lV7tPjYYFAB9sGzYe8MkQSrdLsosDYlUEIqAjNQ9NDtZZJQQJ99BFACYeBjFXJ3w3AAABACOGBm6d",
-        api_version="2024-12-01-preview"
+        api_version="2024-12-01-preview",
+        azure_endpoint="https://pprojects.openai.azure.com/",
+        api_key="60k6pEridppQUi1HWnrw031CKwrpjB4EIFm9EeFVdp1BFdZTo5v1JQQJ99BJACYeBjFXJ3w3AAABACOG0e1A",
     )
 
     # the 2 prompts
