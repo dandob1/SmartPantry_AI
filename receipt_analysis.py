@@ -21,6 +21,18 @@ from azure.core.credentials import AzureKeyCredential
 import os
 import re
 import sqlite3
+load_dotenv()
+
+openai_client = AzureOpenAI(
+    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+)
+
+document_intelligence_client = DocumentIntelligenceClient(
+    endpoint=os.getenv("AZURE_DOCINTEL_ENDPOINT"),
+    credential=AzureKeyCredential(os.getenv("AZURE_DOCINTEL_KEY"))
+)
 
 #pie chart plotting function
 def plot_pie_chart(data):
@@ -52,17 +64,7 @@ def analyze_receipt(input_file_name, uid):
     # Loading the environment variables
     #load_dotenv()
 
-    # Instantiating the OpenAI client
-    openai_client = AzureOpenAI(
-        api_version="2024-12-01-preview",
-        azure_endpoint="https://pprojects.openai.azure.com/",
-        api_key="60k6pEridppQUi1HWnrw031CKwrpjB4EIFm9EeFVdp1BFdZTo5v1JQQJ99BJACYeBjFXJ3w3AAABACOG0e1A",
-    )
-    #receipt reader client
-    document_intelligence_client = DocumentIntelligenceClient(
-        endpoint="https://receiptreaderpp.cognitiveservices.azure.com/",
-        credential=AzureKeyCredential("DWxHgv6diKEFUsYS2vyYt0V8C696GwByccLIMW5NPj159zKuccbVJQQJ99BJACYeBjFXJ3w3AAALACOGWVPF")
-    )
+    
     #open image
     with open(input_file_name, 'rb') as image_file:
         #use the reciept model
@@ -278,11 +280,7 @@ def analyze_receipt(input_file_name, uid):
 
 #ai that will classify individual items added
 def classify_item(name: str, existing_items: list[str]):
-    client = AzureOpenAI(
-        api_version="2024-12-01-preview",
-        azure_endpoint="https://pprojects.openai.azure.com/",
-        api_key="60k6pEridppQUi1HWnrw031CKwrpjB4EIFm9EeFVdp1BFdZTo5v1JQQJ99BJACYeBjFXJ3w3AAABACOG0e1A",
-    )
+
     #provide system prompt, same as before
     system = {
         "role": "system",
@@ -311,7 +309,7 @@ def classify_item(name: str, existing_items: list[str]):
         })
     }
 
-    response = client.chat.completions.create(
+    response = openai_client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[system, user],
         temperature=0,
@@ -331,11 +329,7 @@ def classify_item(name: str, existing_items: list[str]):
         return obj.get("category", "Other"), obj.get("subcategory", "")
     
 def recipe(pantry_items, difficulty, srequest=""):
-    client = AzureOpenAI(
-        api_version="2024-12-01-preview",
-        azure_endpoint="https://pprojects.openai.azure.com/",
-        api_key="60k6pEridppQUi1HWnrw031CKwrpjB4EIFm9EeFVdp1BFdZTo5v1JQQJ99BJACYeBjFXJ3w3AAABACOG0e1A",
-    )
+
 
     # the 2 prompts
     if difficulty == "easy":
@@ -371,7 +365,7 @@ def recipe(pantry_items, difficulty, srequest=""):
         finalPrompt = user_prompt
 
     try:
-        completion = client.chat.completions.create(
+        completion = openai_client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
         {
