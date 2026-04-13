@@ -21,17 +21,16 @@ from azure.core.credentials import AzureKeyCredential
 import os
 import re
 import sqlite3
-load_dotenv()
 
 openai_client = AzureOpenAI(
-    api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    api_version="2024-02-15-preview",
+    azure_endpoint="https://pprojects2.openai.azure.com/",
+    api_key="FXklGgdmn4XRgecpEWS5VEQrkiVZ3wDKjIqLXXhtnM1FkPFoYFEyJQQJ99CAACYeBjFXJ3w3AAABACOGpE5r",
 )
 
 document_intelligence_client = DocumentIntelligenceClient(
-    endpoint=os.getenv("AZURE_DOCINTEL_ENDPOINT"),
-    credential=AzureKeyCredential(os.getenv("AZURE_DOCINTEL_KEY"))
+    endpoint="https://recieptreaderpp2.cognitiveservices.azure.com/",
+    credential=AzureKeyCredential("16CG94hArhVhKmms5yWNOiqnNTTo2A5uQYyDBNaLdFxe67kUe1ElJQQJ99CAACYeBjFXJ3w3AAALACOGPPGB")
 )
 
 #pie chart plotting function
