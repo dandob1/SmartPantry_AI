@@ -20,17 +20,16 @@ from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.core.credentials import AzureKeyCredential
 import os
 import re
-import sqlite3
 
 openai_client = AzureOpenAI(
     api_version="2024-02-15-preview",
-    azure_endpoint="https://pprojects2.openai.azure.com/",
-    api_key="FXklGgdmn4XRgecpEWS5VEQrkiVZ3wDKjIqLXXhtnM1FkPFoYFEyJQQJ99CAACYeBjFXJ3w3AAABACOGpE5r",
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_KEY"],
 )
 
 document_intelligence_client = DocumentIntelligenceClient(
-    endpoint="https://recieptreaderpp2.cognitiveservices.azure.com/",
-    credential=AzureKeyCredential("16CG94hArhVhKmms5yWNOiqnNTTo2A5uQYyDBNaLdFxe67kUe1ElJQQJ99CAACYeBjFXJ3w3AAALACOGPPGB")
+    endpoint=os.environ["AZURE_DOC_INTEL_ENDPOINT"],
+    credential=AzureKeyCredential(os.environ["AZURE_DOC_INTEL_KEY"])
 )
 
 #pie chart plotting function
@@ -76,7 +75,14 @@ def analyze_receipt(input_file_name, uid):
     import psycopg2
     import os
 
-    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+    db_url = (
+    os.environ.get("DATABASE_URL")
+    or os.environ.get("POSTGRES_URL_NON_POOLING")
+    or os.environ.get("POSTGRES_PRISMA_URL")
+)
+    if not db_url:
+        raise RuntimeError("No database URL env var found")
+    conn = psycopg2.connect(db_url, sslmode="require")
     cur = conn.cursor()
 #variables used
     extracted_items = ""

@@ -1,12 +1,11 @@
 import os
 from receipt_analysis import analyze_receipt, classify_item, recipe
 import magic
-import sqlite3
 from flask import Flask, session, render_template, redirect, url_for, request, flash
 from datetime import datetime, timezone
 
 app = Flask(__name__)
-app.secret_key = "poop fart"
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 app.debug = True
 
 SUPPORTED_FORMATS = [
@@ -23,8 +22,23 @@ import psycopg2
 import os
 
 def get_db_connection():
-    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
-    return conn
+    db_url = (
+        os.environ.get("DATABASE_URL")
+        or os.environ.get("POSTGRES_URL_NON_POOLING")
+        or os.environ.get("POSTGRES_PRISMA_URL")
+    )
+    if not db_url:
+        raise RuntimeError("No database URL env var found")
+    return psycopg2.connect(db_url, sslmode="require")
+
+_db_initialized = False
+
+@app.before_request
+def ensure_db_initialized():
+    global _db_initialized
+    if not _db_initialized:
+        init_db()
+        _db_initialized = True
 
 def init_db():
     conn = get_db_connection()
@@ -62,9 +76,7 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Call this once when app starts
-with app.app_context():
-    init_db()
+
 #login route
 @app.route("/", methods=["GET", "POST"])
 def login():
