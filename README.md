@@ -58,32 +58,13 @@ SmartPantry AI is a full-stack Flask-based web application that leverages Azure 
 ---
 
 ## Usage
-1. **Clone into the repository:**
-   ```bash
-   git clone https://github.com/dandob1/SmartPantry_AI.git
-   ```
-   ```bash
-   cd SmartPantry_AI
-   ```
-2. **Install dependencies:**
-   ```bash
-   pip install flask python-dotenv matplotlib pillow azure-ai-documentintelligence openai python-magic-bin
-   ```
-3. **Initialize the database:**
-   ```bash
-   python init_db.py
-   ```
-4. **Run the app:**
-   ```bash
-   python app.py
-   ```
-5. **Visit:**
-    - http://localhost:8081
-6. **Sign up as a new user**
-7. **Upload Receipts:**
+1. **Visit:**
+    - [http://localhost:8081](https://smart-pantry-ai-ten.vercel.app/)
+2. **Sign up as a new user**
+3. **Upload Receipts:**
     - Sample receipts are provided in the `\uploads` folder.
-8. **Manage your local pantry/generate recipes**
-9. **View your financial trends over time**
+4. **Manage your local pantry/generate recipes**
+5. **View your financial trends over time**
 
 ---
 
