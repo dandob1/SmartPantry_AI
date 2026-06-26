@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-# filename: requirements.txt
+
 flask
 openai
 python-dotenv
@@ -8,14 +7,4 @@ pillow
 azure-ai-documentintelligence
 azure-core
 python-magic
-=======
-# filename: requirements.txt
-flask
-openai
-python-dotenv
-matplotlib
-pillow
-azure-ai-documentintelligence
-azure-core
-python-magic
->>>>>>> 4bcc8a36c1a4cfb3c5e81da7c8dd091ce01c3252
+psycopg2-binary
