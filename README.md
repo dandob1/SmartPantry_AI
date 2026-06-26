@@ -1,4 +1,4 @@
-# [SmartPantry AI](https://smart-pantry-ai-ten.vercel.app/)
+# SmartPantry AI [(Click to Visit)](https://smart-pantry-ai-ten.vercel.app/)
 > **Are you a college student with limited cooking experience?**
 > **Do you often have leftover ingredients sitting in your kitchen?**
 
@@ -63,7 +63,7 @@ SmartPantry AI is a full-stack Flask-based web application that leverages Azure 
 
 ## Usage
 1. **Visit:**
-    - [Visit SmartPantry.ai!](https://smart-pantry-ai-ten.vercel.app/)
+    - https://smart-pantry-ai-ten.vercel.app/
 2. **Sign up as a new user**
 3. **Upload Receipts:**
     - Sample receipts are provided in the `uploads/` folder.
