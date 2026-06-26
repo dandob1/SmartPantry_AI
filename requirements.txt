@@ -1,0 +1,9 @@
+# filename: requirements.txt
+flask
+openai
+python-dotenv
+matplotlib
+pillow
+azure-ai-documentintelligence
+azure-core
+python-magic
