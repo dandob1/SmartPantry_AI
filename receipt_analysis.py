@@ -73,7 +73,10 @@ def analyze_receipt(input_file_name, uid):
             content_type="application/octet-stream"
         )
     #connect to the database
-    conn = sqlite3.connect("db.db")
+    import psycopg2
+    import os
+
+    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
     cur = conn.cursor()
 #variables used
     extracted_items = ""
@@ -260,15 +263,12 @@ def analyze_receipt(input_file_name, uid):
     ]
     #put into first table
     cleaned = sum(price for (name, price, cat, sub) in items_for_db)
-    cur.execute(
-        "INSERT INTO receipt (uid, total_spend, image_path) VALUES (?, ?, ?)",
-        (uid, cleaned, image_path)
-    )
-    rid = cur.lastrowid
+    cur.execute("INSERT INTO receipt (uid, total_spend, image_path) VALUES (%s, %s, %s) RETURNING rid", (uid, cleaned, image_path))
+    rid = cur.fetchone()[0]
     #second table
     for name, price, category, subcategory in items_for_db:
         cur.execute(
-            "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (%s, %s, %s, %s, %s)",
             (rid, name, price, category, subcategory)
         )
 

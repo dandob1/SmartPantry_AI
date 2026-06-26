@@ -19,9 +19,52 @@ ALLOWED_TYPES = {
     "image/png",
     "image/jpg"
 }
-def get_db_connection():
-    return sqlite3.connect("db.db")
+import psycopg2
+import os
 
+def get_db_connection():
+    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS "User" (
+            uid SERIAL PRIMARY KEY,
+            fname TEXT, lname TEXT,
+            email TEXT UNIQUE, password TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS receipt (
+            rid SERIAL PRIMARY KEY,
+            uid INTEGER, total_spend REAL,
+            image_path TEXT,
+            date_uploaded TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS receiptData (
+            id SERIAL PRIMARY KEY,
+            rid INTEGER, itemName TEXT,
+            itemPrice REAL, category TEXT, subcategory TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS savedRecipe (
+            recipe_id SERIAL PRIMARY KEY,
+            uid INTEGER, name TEXT,
+            ingredients TEXT, instructions TEXT,
+            date_saved TIMESTAMP DEFAULT NOW()
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+# Call this once when app starts
+with app.app_context():
+    init_db()
 #login route
 @app.route("/", methods=["GET", "POST"])
 def login():
@@ -32,7 +75,7 @@ def login():
 
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT uid, fname, lname, email FROM User WHERE email = ? AND password = ?", (email, password))
+        cur.execute('SELECT uid, fname, lname, email FROM "User" WHERE email = %s AND password = %s', (email, password))
         user = cur.fetchone()
         conn.close()
 
@@ -58,14 +101,13 @@ def signup():
 
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM User WHERE email = ?", (email,))
+        cur.execute('SELECT * FROM "User" WHERE email = %s', (email,))
         if cur.fetchone():
             error = "Email already registered."
         else:
-            cur.execute("INSERT INTO User (fname, lname, email, password) VALUES (?, ?, ?, ?)",
-                        (fname, lname, email, password))
+            cur.execute('INSERT INTO "User" (fname, lname, email, password) VALUES (%s, %s, %s, %s) RETURNING uid', (fname, lname, email, password))
+            uid = cur.fetchone()[0]
             conn.commit()
-            uid = cur.lastrowid
             session["uid"] = uid
             session["fname"] = fname
             session["lname"] = lname
@@ -129,13 +171,13 @@ def edit_info():
         cur = conn.cursor()
         
         #get info
-        cur.execute("SELECT email, password FROM User WHERE uid = ?", (session["uid"],))
+        cur.execute('SELECT email, password FROM "User" WHERE uid = %s', (session["uid"],))
         current_user = cur.fetchone()
         current_email, current_password = current_user
         
         #check if changing email
         if email != current_email:
-            cur.execute("SELECT uid FROM User WHERE email = ? AND uid != ?", (email, session["uid"]))
+            cur.execute('SELECT uid FROM "User" WHERE email = %s AND uid != %s', (email, session["uid"]))
             if cur.fetchone():
                 error = "Email is already registered..."
                 conn.close()
@@ -149,10 +191,10 @@ def edit_info():
                 error = "WRONG PASSWORD!"
             else:
                 # Update with new password
-                cur.execute("""UPDATE User SET fname = ?, lname = ?, email = ?, password = ? WHERE uid = ?""", (fname, lname, email, new_pw, session["uid"]))
+                cur.execute('UPDATE "User" SET fname = %s, lname = %s, email = %s, password = %s WHERE uid = %s', (fname, lname, email, new_pw, session["uid"]))
         else:
             #dont change pword
-            cur.execute("""UPDATE User SET fname = ?, lname = ?, email = ? WHERE uid = ?""", (fname, lname, email, session["uid"]))
+            cur.execute('UPDATE "User" SET fname = %s, lname = %s, email = %s WHERE uid = %s', (fname, lname, email, session["uid"]))
         
         if not error:
             conn.commit()
@@ -190,7 +232,7 @@ def history():
 
             if item:
                 #get existing items
-                cur.execute("""SELECT d.itemName FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (uid,))
+                cur.execute("""SELECT d.itemName FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = %s""", (uid,))
                 rows = cur.fetchall()
                 existing = []
                 for row in rows:
@@ -203,10 +245,10 @@ def history():
                     override_item = item
                 else:
                     #update table
-                    cur.execute("INSERT INTO receipt (uid, total_spend) VALUES (?,?)", (uid, 0.00))
-                    rid = cur.lastrowid
+                    cur.execute("INSERT INTO receipt (uid, total_spend) VALUES (%s, %s) RETURNING rid", (uid, 0.00))
+                    rid = cur.fetchone()[0]
                     cur.execute(
-                        "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (?,?,?,?,?)",
+                        "INSERT INTO receiptData (rid, itemName, itemPrice, category, subcategory) VALUES (%s,%s,%s,%s,%s)",
                         (rid, item, 0.00, cat or "Other", sub or "Force Added")
                     )
                     conn.commit()
@@ -216,21 +258,21 @@ def history():
     if request.method == "POST":
         #delete all
         if 'clear_all' in request.form:
-            cur.execute("""DELETE FROM receiptData WHERE rid IN (SELECT rid FROM receipt WHERE uid = ?)""", (uid,))
+            cur.execute("""DELETE FROM receiptData WHERE rid IN (SELECT rid FROM receipt WHERE uid = %s)""", (uid,))
             conn.commit()
         # delete only some
         elif 'delete_selected' in request.form:
             ids = request.form.getlist('selected')
             if ids:
-                placeholders = ",".join("?" for _ in ids)
+                placeholders = ",".join("%s" for _ in ids)
                 cur.execute(f"DELETE FROM receiptData WHERE id IN ({placeholders})", ids)
                 conn.commit()
 
     #get rows for history
-    cur.execute("SELECT DISTINCT d.category FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?", (uid,))
+    cur.execute("SELECT DISTINCT d.category FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = %s", (uid,))
     categories = [row[0] for row in cur.fetchall()]
 
-    cur.execute("SELECT DISTINCT d.subcategory FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?", (uid,))
+    cur.execute("SELECT DISTINCT d.subcategory FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = %s", (uid,))
     subcategories = [row[0] for row in cur.fetchall()]
 
     category = request.args.get('filter_category', '').strip()
@@ -238,22 +280,22 @@ def history():
     word = request.args.get('search_term', '').strip()
 
     sql = "SELECT d.id, d.itemName, d.itemPrice, d.category, d.subcategory, DATE(r.date_uploaded) AS date FROM receiptData d JOIN receipt r ON d.rid = r.rid"
-    uidis = ["r.uid = ?"]
+    uidis = ["r.uid = %s"]
     params = [uid]
 
     if not show_all:
         uidis.append("d.category IN ('Groceries')")
 
     if category:
-        uidis.append("d.category = ?")
+        uidis.append("d.category = %s")
         params.append(category)
 
     if subcategory:
-        uidis.append("d.subcategory = ?")
+        uidis.append("d.subcategory = %s")
         params.append(subcategory)
 
     if word:
-        uidis.append("d.itemName LIKE ?")
+        uidis.append("d.itemName LIKE %s")
         params.append(f"%{word}%")
 
     query = (sql + " WHERE " + " AND ".join(uidis) + " ORDER BY r.date_uploaded DESC")
@@ -276,21 +318,21 @@ def financial():
     conn = get_db_connection()
     cur = conn.cursor()
     #current total spending
-    cur.execute("""SELECT COALESCE(SUM(d.itemPrice),0) FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (uid,))
+    cur.execute("""SELECT COALESCE(SUM(d.itemPrice),0) FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = %s""", (uid,))
     current_total = cur.fetchone()[0]
     #all time total spending
-    cur.execute("""SELECT COALESCE(SUM(total_spend),0) FROM receipt WHERE uid = ?""", (uid,))
+    cur.execute("""SELECT COALESCE(SUM(total_spend),0) FROM receipt WHERE uid = %s""", (uid,))
     total = cur.fetchone()[0]
     #dates for graph
-    cur.execute("""SELECT date_uploaded, total_spend FROM receipt WHERE uid = ? ORDER BY date_uploaded""", (uid,))
+    cur.execute("""SELECT date_uploaded, total_spend FROM receipt WHERE uid = %s ORDER BY date_uploaded""", (uid,))
     rows = cur.fetchall()
     conn.close()
 
     dates = []
     sums = []
     running = 0.0
-    for ts_str, amt in rows:
-        date = datetime.fromisoformat(ts_str)
+    for ts_val, amt in rows:
+        date = ts_val if isinstance(ts_val, datetime) else datetime.fromisoformat(str(ts_val))
         dates.append(date.isoformat())
         running += float(amt)
         sums.append(running)
@@ -308,12 +350,12 @@ def recipes():
     #get pantry
     conn = get_db_connection()
     cur  = conn.cursor()
-    cur.execute("""SELECT d.itemName FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = ?""", (session['uid'],))
+    cur.execute("""SELECT d.itemName FROM receiptData d JOIN receipt r ON d.rid = r.rid WHERE r.uid = %s""", (session['uid'],))
     pantry = [row[0] for row in cur.fetchall()]
     
     #get saved items
     cur.execute(
-        "SELECT recipe_id, name, date_saved FROM savedRecipe WHERE uid = ? ORDER BY date_saved DESC",
+        "SELECT recipe_id, name, date_saved FROM savedRecipe WHERE uid = %s ORDER BY date_saved DESC",
         (session['uid'],)
     )
     saved = cur.fetchall()
@@ -334,7 +376,7 @@ def recipes():
 
             conn = get_db_connection()
             cur  = conn.cursor()
-            cur.execute("INSERT INTO savedRecipe (uid, name, ingredients, instructions)VALUES (?, ?, ?, ?)", (session['uid'], name, raw, raw))
+            cur.execute("INSERT INTO savedRecipe (uid, name, ingredients, instructions)VALUES (%s, %s, %s, %s)", (session['uid'], name, raw, raw))
             conn.commit()
             conn.close()
 
@@ -344,7 +386,7 @@ def recipes():
             rid = request.form.get('recipe_id')
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute("DELETE FROM savedRecipe WHERE recipe_id = ? AND uid = ?", (rid, session['uid']))
+            cur.execute("DELETE FROM savedRecipe WHERE recipe_id = %s AND uid = %s", (rid, session['uid']))
             conn.commit()
             conn.close()
             flash('Saved recipe deleted.')
@@ -363,7 +405,7 @@ def saved_recipes():
         return redirect(url_for('login'))
     conn = get_db_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT recipe_id, name, date_saved FROM savedRecipe WHERE uid = ? ORDER BY date_saved DESC", (session['uid'],))
+    cur.execute("SELECT recipe_id, name, date_saved FROM savedRecipe WHERE uid = %s ORDER BY date_saved DESC", (session['uid'],))
     saved = cur.fetchall()
     conn.close()
     return render_template("saved_recipes.html", recipes=saved)
@@ -375,7 +417,7 @@ def view_saved(recipe_id):
 
     conn = get_db_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT name, ingredients, instructions, date_saved FROM savedRecipe WHERE recipe_id = ? AND uid = ?", (recipe_id, session['uid']))
+    cur.execute("SELECT name, ingredients, instructions, date_saved FROM savedRecipe WHERE recipe_id = %s AND uid = %s", (recipe_id, session['uid']))
     row = cur.fetchone()
     conn.close()
 
