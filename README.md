@@ -1,4 +1,4 @@
-# SmartPantry AI
+# [SmartPantry AI](https://smart-pantry-ai-ten.vercel.app/)
 > **Are you a college student with limited cooking experience?**
 > **Do you often have leftover ingredients sitting in your kitchen?**
 
@@ -26,7 +26,7 @@ SmartPantry AI is a full-stack Flask-based web application that leverages Azure 
   - Automated receipt data extraction using Azure AI Document Intelligence.
   - Clean and normalize product names with OpenAI GPT.
   - Categorize and subcategorize items (Groceries, Dining Out, Transportation, etc.).
-  - Save receipt data into a SQLite database for persistent tracking.
+  - Save receipt data into a PostgreSQL database for persistent tracking.
 ### 2. Pantry Management
   - Track items currently in stock.
   - Add items manually and classify them with AI-powered duplicate detection and categorization.
@@ -48,21 +48,25 @@ SmartPantry AI is a full-stack Flask-based web application that leverages Azure 
 
 ## Technology Stack
 - Backend: Flask (Python)
-- Database: SQLite3
+- Database: PostgreSQL (Supabase-hosted), accessed via psycopg2
 - AI Services:
   - Azure OpenAI for: Text cleanup and classification, AI-powered recipe generation
-  - Azure Document Intelligence for: Receipt data extraction
+  - Azure Document Intelligence for: Receipt OCR + structured item extraction
 - Visualization: Plotly.js, Matplotlib
-- Frontend: HTML, Bootstrap
-
+- Frontend: HTML templates + Bootstrap (Flask/Jinja rendering)
+- Deployment/Hosting: Vercel (serverless Python function runtime)
+- Environment/Secrets Management: Vercel Environment Variables
+- Version Control / CI trigger: Git + GitHub (push-triggered deploys)
+  
 ---
+
 
 ## Usage
 1. **Visit:**
     - [Visit SmartPantry.ai!](https://smart-pantry-ai-ten.vercel.app/)
 2. **Sign up as a new user**
 3. **Upload Receipts:**
-    - Sample receipts are provided in the `\uploads` folder.
+    - Sample receipts are provided in the `uploads/` folder.
 4. **Manage your local pantry/generate recipes**
 5. **View your financial trends over time**
 
