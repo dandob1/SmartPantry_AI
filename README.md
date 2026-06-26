@@ -59,7 +59,7 @@ SmartPantry AI is a full-stack Flask-based web application that leverages Azure 
 
 ## Usage
 1. **Visit:**
-    - [http://localhost:8081](https://smart-pantry-ai-ten.vercel.app/)
+    - [Visit SmartPantry.ai!](https://smart-pantry-ai-ten.vercel.app/)
 2. **Sign up as a new user**
 3. **Upload Receipts:**
     - Sample receipts are provided in the `\uploads` folder.
