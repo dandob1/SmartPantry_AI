@@ -8,6 +8,7 @@
 #%pip install flask
 
 import json
+import io
 import time
 from openai import AzureOpenAI
 from dotenv import load_dotenv
@@ -50,12 +51,15 @@ def plot_pie_chart(data):
     plt.axis('equal')
     plt.tight_layout()
 
-    os.makedirs("static", exist_ok=True)
-    output_path = os.path.join("static", "pie_chart.png")
-    plt.savefig(output_path)
+    # Save chart to an in-memory buffer instead of a file (Vercel filesystem is read-only)
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
     plt.close()
+    buf.seek(0)
 
-    return "/" + output_path
+    # Return a data URI the browser can render directly in an <img> tag
+    encoded = base64.b64encode(buf.read()).decode("utf-8")
+    return "data:image/png;base64," + encoded
 
 #the receipt analysis function
 def analyze_receipt(input_file_name, uid):
