@@ -3,6 +3,7 @@ from receipt_analysis import analyze_receipt, classify_item, recipe
 import magic
 from flask import Flask, session, render_template, redirect, url_for, request, flash
 from datetime import datetime, timezone
+import tempfile
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
