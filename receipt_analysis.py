@@ -49,7 +49,8 @@ def plot_pie_chart(data):
     plt.pie(values, labels=labels, autopct='%1.1f%%', colors=plt.cm.Pastel2.colors)
     plt.axis('equal')
     plt.tight_layout()
-    
+
+    os.makedirs("static", exist_ok=True)
     output_path = os.path.join("static", "pie_chart.png")
     plt.savefig(output_path)
     plt.close()
