@@ -150,6 +150,7 @@ def home():
         file = request.files["receipt"]
         if file:
             #make sure right type of file
+            os.makedirs('uploads', exist_ok=True)
             filepath = os.path.join('uploads', file.filename)
             file.save(filepath)
 
