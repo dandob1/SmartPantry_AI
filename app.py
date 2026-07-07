@@ -24,9 +24,9 @@ import os
 
 def get_db_connection():
     db_url = (
-        os.environ.get("smartpantrydb_DATABASE_URL_UNPOOLED")
+        os.environ.get("smartpantrydb_DATABASE_URL")
+        or os.environ.get("smartpantrydb_DATABASE_URL_UNPOOLED")
         or os.environ.get("smartpantrydb_POSTGRES_URL_NON_POOLING")
-        or os.environ.get("smartpantrydb_DATABASE_URL")
     )
     if not db_url:
         raise RuntimeError("No database URL env var found")
