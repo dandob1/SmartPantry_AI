@@ -149,9 +149,8 @@ def home():
     if request.method == "POST":
         file = request.files["receipt"]
         if file:
-            #make sure right type of file
-            os.makedirs('uploads', exist_ok=True)
-            filepath = os.path.join('uploads', file.filename)
+            upload_dir = tempfile.gettempdir()
+            filepath = os.path.join(upload_dir, file.filename)
             file.save(filepath)
 
             ext = os.path.splitext(file.filename)[1][1:].upper()
