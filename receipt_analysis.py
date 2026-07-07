@@ -72,17 +72,8 @@ def analyze_receipt(input_file_name, uid):
             content_type="application/octet-stream"
         )
     #connect to the database
-    import psycopg2
-    import os
-
-    db_url = (
-    os.environ.get("DATABASE_URL")
-    or os.environ.get("POSTGRES_URL_NON_POOLING")
-    or os.environ.get("POSTGRES_PRISMA_URL")
-)
-    if not db_url:
-        raise RuntimeError("No database URL env var found")
-    conn = psycopg2.connect(db_url, sslmode="require")
+    from app import get_db_connection
+    conn = get_db_connection()
     cur = conn.cursor()
 #variables used
     extracted_items = ""
